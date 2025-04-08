@@ -4,28 +4,31 @@
     // AMAZON SAYFALARI
     if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
-            // Kod ancak URL'de sipo=true parametresi varsa çalışır
+            // Yalnızca URL'de sipo=true varsa otomatik işleme devam etsin.
             const params = new URLSearchParams(window.location.search);
             if (params.get("sipo") !== "true") {
                 return;
             }
-
+            
             const url = window.location.href;
 
-            // Ürün detay (dp) sayfasında: önce adet ayarlanıp, sonra sepete ekleme gerçekleşsin
+            // A. Ürün Detay Sayfası (/dp/): Adet ayarlanıp "Add to Cart" tıklanıyor.
             if (url.includes("/dp/")) {
-                // Adet (quantity) seçimini gerçekleştir ve ardından Add to Cart tıklansın
+                console.log("Ürün sayfası algılandı.");
                 let quantitySet = false;
                 let setQuantityInterval = setInterval(() => {
                     const quantitySelect = document.getElementById("quantity");
+                    // Eğer dropdown varsa, URL'deki "quantity" parametresine göre seçimi yapalım.
                     if (quantitySelect) {
                         const quantityParam = params.get("quantity");
                         if (quantityParam && quantitySelect.querySelector(`option[value="${quantityParam}"]`)) {
                             quantitySelect.value = quantityParam;
                             quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            console.log("Ürün adedi ayarlandı:", quantityParam);
                         }
                         quantitySet = true;
                     }
+                    // Eğer adet ayarı yapıldıysa, "Add to Cart" tıklama işlemini başlat.
                     if (quantitySet) {
                         clearInterval(setQuantityInterval);
                         let tryAdd = setInterval(() => {
@@ -35,7 +38,7 @@
                                 setTimeout(() => {
                                     console.log("Add to Cart butonuna tıklanıyor...");
                                     addToCartBtn.click();
-                                }, 500);
+                                }, 500); // Biraz gecikme veriliyor.
                             }
                         }, 300);
                     }
@@ -43,18 +46,18 @@
                 return;
             }
 
-            // 1️⃣ SMART-WAGON sayfası: Sayfayı 1 defa yenile, ardından Go to Cart linkine tıkla
+            // B. Smart-Wagon Sayfası (/cart/smart-wagon):
+            // İlk kez sayfa yüklendiğinde, otomatik yenileme yapıp, ardından "Go to Cart" linkine tıklayalım.
             if (url.includes("cart/smart-wagon")) {
                 console.log("Smart-wagon sayfası algılandı.");
-                // Yeni sekmede sessionStorage sıfırlandığından localStorage kullanıyoruz
                 const reloaded = localStorage.getItem("smartWagonReloaded");
                 if (!reloaded) {
-                    console.log("Sayfa yenileniyor (ilk giriş).");
+                    console.log("Smart-wagon sayfası yenileniyor (ilk giriş).");
                     localStorage.setItem("smartWagonReloaded", "true");
                     location.reload();
                     return;
                 } else {
-                    // Yenileme işlemi tamamlandıktan sonra, reloaded bayrağını kaldırıyoruz.
+                    // Yenileme tamamlandıktan sonra bayrağı temizleyelim.
                     localStorage.removeItem("smartWagonReloaded");
                 }
                 let tryGoToCart = setInterval(() => {
@@ -68,22 +71,44 @@
                 return;
             }
 
-            // 2️⃣ CART sayfası → Proceed to checkout işlemi
+            // C. Cart Sayfası (/cart): Adet güncellemesi yapılarak Proceed to Checkout'a tıklanıyor.
             if (url.includes("/cart") && !url.includes("smart-wagon")) {
-                let tryProceed = setInterval(() => {
-                    const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
-                    if (proceedBtn) {
-                        console.log("Proceed to checkout bulundu → tıklanıyor.");
-                        clearInterval(tryProceed);
-                        proceedBtn.click();
+                console.log("Cart sayfası algılandı.");
+                let tryCartUpdate = setInterval(() => {
+                    // Aşağıdaki input, sepet içerisindeki ürün adedini gösteriyor.
+                    const quantityInput = document.querySelector('input[name="quantityBox"]');
+                    if (quantityInput) {
+                        clearInterval(tryCartUpdate);
+                        const desiredQuantity = params.get("quantity") || "1";
+                        // Mevcut değerle istenen değer uyuşmuyorsa güncelleme yapalım.
+                        if (quantityInput.value !== desiredQuantity) {
+                            console.log("Cart'taki adet güncelleniyor. Yeni değer:", desiredQuantity);
+                            quantityInput.value = desiredQuantity;
+                            quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            // Update butonunu tetikleyelim.
+                            const updateButton = document.querySelector('.sc-quantity-update-button a');
+                            if (updateButton) {
+                                updateButton.click();
+                                console.log("Update butonuna tıklandı.");
+                            }
+                        }
+                        // Ürün adedi güncellendikten sonra Proceed to Checkout işlemini yapalım.
+                        let tryProceed = setInterval(() => {
+                            const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
+                            if (proceedBtn) {
+                                clearInterval(tryProceed);
+                                console.log("Proceed to Checkout butonuna tıklanıyor.");
+                                proceedBtn.click();
+                            }
+                        }, 300);
                     }
                 }, 300);
                 return;
             }
 
-            // 3️⃣ Checkout → Chewbacca → Cheetah yönlendirmesi
+            // D. Checkout İşlemleri: Chewbacca yönlendirmesi varsa işlemleri tamamlıyoruz.
             if (url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
-                console.log("Chewbacca sayfası algılandı → Cheetah'a yönlendiriliyor...");
+                console.log("Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
                 setTimeout(() => {
                     window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
                 }, 100);
@@ -112,9 +137,9 @@
                         alert("ASIN bulunamadı.");
                         return;
                     }
-                    // sipo=true ve quantity parametresi eklenmiş URL
+                    // URL’ye sipo=true ve quantity parametresi ekleniyor.
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
-                    // Yeni sekmede açmak için anchor elementi kullanılıyor
+                    // Buton tıklanınca yeni sekmede ürün sayfası açılması sağlanıyor.
                     var a = document.createElement('a');
                     a.href = affiliateURL;
                     a.target = '_blank';
