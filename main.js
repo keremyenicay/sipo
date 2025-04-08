@@ -5,7 +5,7 @@
     const isSipo = params.get("sipo") === "true";
     const url = window.location.href;
 
-    // A. ÜRÜN SAYFASI (/dp/): Adet ayarlanıp "Add to Cart" tıklanıyor.
+    // A. Ürün Sayfası (/dp/)
     if (isSipo && url.includes("/dp/")) {
         console.log("🔹 Ürün sayfası algılandı.");
         const quantity = params.get("quantity") || "1";
@@ -21,7 +21,7 @@
                 setTimeout(() => {
                     const addToCartBtn = document.getElementById("add-to-cart-button");
                     if (addToCartBtn) {
-                        console.log("🛒 Add to Cart butonuna tıklanıyor...");
+                        console.log("🛒 Add to Cart tıklanıyor...");
                         addToCartBtn.click();
                     }
                 }, 500);
@@ -30,39 +30,50 @@
         return;
     }
 
-    // B. SMART WAGON SAYFASI (/cart/smart-wagon):  
-    // Önce sessionStorage ile sayfa yenilemesi sağlanır; yenilendikten sonra "Go to Cart" butonuna tıklanır.
+    // B. Smart Wagon Sayfası (/cart/smart-wagon/)
     if (url.includes("cart/smart-wagon")) {
-    console.log("🔹 Smart-wagon sayfası algılandı.");
+        console.log("🔹 Smart-wagon sayfası algılandı.");
 
-    const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
+        const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
 
-    if (!alreadyReloaded) {
-        console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
-        sessionStorage.setItem("smartWagonReloaded", "true");
-        location.reload();
+        if (!alreadyReloaded) {
+            console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
+            sessionStorage.setItem("smartWagonReloaded", "true");
+            location.reload();
+            return;
+        }
+
+        // Sayfa yenilendikten sonra bu kısım çalışır
+        console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
+        sessionStorage.removeItem("smartWagonReloaded"); // Bayrağı kaldır
+
+        let tryGoToCart = setInterval(() => {
+            const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
+            if (goToCartLink) {
+                clearInterval(tryGoToCart);
+                console.log("➡️ Go to Cart bulundu, tıklanıyor.");
+                goToCartLink.click();
+            }
+        }, 300);
+
         return;
     }
 
-    // Sayfa yenilendikten sonra bu kısım çalışır
-    console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
-    sessionStorage.removeItem("smartWagonReloaded"); // Bayrağı kaldır
+    // YENİ EK: Cart sayfası (ref_=sw_gtc) açıldığında Proceed to checkout butonuna tıklama
+    if (url.includes("/cart?ref_=sw_gtc")) {
+        console.log("🔹 Cart ref sw_gtc sayfası algılandı.");
+        let tryProceedSpecific = setInterval(() => {
+            const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
+            if (proceedBtn) {
+                clearInterval(tryProceedSpecific);
+                console.log("➡️ Cart ref sw_gtc Proceed to Checkout butonuna tıklanıyor.");
+                proceedBtn.click();
+            }
+        }, 300);
+        return;
+    }
 
-    let tryGoToCart = setInterval(() => {
-        const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
-        if (goToCartLink) {
-            clearInterval(tryGoToCart);
-            console.log("➡️ Go to Cart bulundu, tıklanıyor.");
-            goToCartLink.click();
-        }
-    }, 300);
-
-    return;
-}
-
-    // C. SEPET SAYFASI (/cart):  
-    // Sepet sayfasında, sepet içindeki adet input (quantityBox) güncellenir,
-    // ardından Update ve Proceed to Checkout butonlarına tıklanır.
+    // C. Sepet Sayfası (/cart/)
     if (isSipo && url.includes("/cart") && !url.includes("smart-wagon")) {
         console.log("🔹 Sepet sayfası algılandı.");
         const desiredQuantity = params.get("quantity") || "1";
@@ -74,9 +85,9 @@
                     console.log("🔧 Sepetteki adet güncelleniyor. Yeni değer:", desiredQuantity);
                     quantityInput.value = desiredQuantity;
                     quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    const updateButton = document.querySelector('.sc-quantity-update-button a');
-                    if (updateButton) {
-                        updateButton.click();
+                    const updateBtn = document.querySelector('.sc-quantity-update-button a');
+                    if (updateBtn) {
+                        updateBtn.click();
                         console.log("🛠 Update butonuna tıklandı.");
                     }
                 }
@@ -93,7 +104,7 @@
         return;
     }
 
-    // D. CHEWBACCA → CHEETAH YÖNLENDİRMESİ:
+    // D. Chewbacca → Cheetah Yönlendirmesi
     if (isSipo && url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
         console.log("🚚 Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
         setTimeout(() => {
@@ -102,7 +113,7 @@
         return;
     }
 
-    // E. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu
+    // E. SellerFlash: Affiliate Satın Al Butonu
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
@@ -122,7 +133,6 @@
                         alert("ASIN bulunamadı.");
                         return;
                     }
-                    // Yönlendirme URL'sine sipo=true ve quantity parametresi ekleniyor.
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
                     window.location.href = affiliateURL;
                 });
