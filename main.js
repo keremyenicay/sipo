@@ -18,7 +18,6 @@
                 let quantitySet = false;
                 let setQuantityInterval = setInterval(() => {
                     const quantitySelect = document.getElementById("quantity");
-                    // Eğer dropdown varsa, URL'deki "quantity" parametresine göre seçimi yapalım.
                     if (quantitySelect) {
                         const quantityParam = params.get("quantity");
                         if (quantityParam && quantitySelect.querySelector(`option[value="${quantityParam}"]`)) {
@@ -28,7 +27,6 @@
                         }
                         quantitySet = true;
                     }
-                    // Eğer adet ayarı yapıldıysa, "Add to Cart" tıklama işlemini başlat.
                     if (quantitySet) {
                         clearInterval(setQuantityInterval);
                         let tryAdd = setInterval(() => {
@@ -46,53 +44,41 @@
                 return;
             }
 
-            // B. Smart-Wagon Sayfası (/cart/smart-wagon):
-            // İlk kez sayfa yüklendiğinde, otomatik yenileme yapıp, ardından "Go to Cart" linkine tıklayalım.
+            // B. Smart-Wagon Sayfası (/cart/smart-wagon): 
+            // Sayfa yenilemesi yapılmadan direkt "Go to Cart" butonuna tıklanır.
             if (url.includes("cart/smart-wagon")) {
-                console.log("Smart-wagon sayfası algılandı.");
-                const reloaded = localStorage.getItem("smartWagonReloaded");
-                if (!reloaded) {
-                    console.log("Smart-wagon sayfası yenileniyor (ilk giriş).");
-                    localStorage.setItem("smartWagonReloaded", "true");
-                    location.reload();
-                    return;
-                } else {
-                    // Yenileme tamamlandıktan sonra bayrağı temizleyelim.
-                    localStorage.removeItem("smartWagonReloaded");
-                }
+                console.log("Smart-wagon sayfası algılandı, Go to Cart butonuna tıklanıyor.");
                 let tryGoToCart = setInterval(() => {
                     const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
                     if (goToCartLink) {
-                        console.log("Go to Cart bulundu → tıklanıyor.");
                         clearInterval(tryGoToCart);
+                        console.log("Go to Cart bulundu, tıklanıyor.");
                         goToCartLink.click();
                     }
                 }, 300);
                 return;
             }
 
-            // C. Cart Sayfası (/cart): Adet güncellemesi yapılarak Proceed to Checkout'a tıklanıyor.
+            // C. Cart Sayfası (/cart): 
+            // Gelen sepet sayfasında, miktar input (quantityBox) üzerinden istenen adet ayarlanıp, 
+            // Update butonuna tıklanır ardından Proceed to Checkout işlemi gerçekleştirilir.
             if (url.includes("/cart") && !url.includes("smart-wagon")) {
                 console.log("Cart sayfası algılandı.");
                 let tryCartUpdate = setInterval(() => {
-                    // Aşağıdaki input, sepet içerisindeki ürün adedini gösteriyor.
                     const quantityInput = document.querySelector('input[name="quantityBox"]');
                     if (quantityInput) {
                         clearInterval(tryCartUpdate);
                         const desiredQuantity = params.get("quantity") || "1";
-                        // Mevcut değerle istenen değer uyuşmuyorsa güncelleme yapalım.
                         if (quantityInput.value !== desiredQuantity) {
                             console.log("Cart'taki adet güncelleniyor. Yeni değer:", desiredQuantity);
                             quantityInput.value = desiredQuantity;
                             quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            // Update butonunu tetikleyelim.
                             const updateButton = document.querySelector('.sc-quantity-update-button a');
                             if (updateButton) {
                                 updateButton.click();
                                 console.log("Update butonuna tıklandı.");
                             }
                         }
-                        // Ürün adedi güncellendikten sonra Proceed to Checkout işlemini yapalım.
                         let tryProceed = setInterval(() => {
                             const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
                             if (proceedBtn) {
@@ -106,7 +92,7 @@
                 return;
             }
 
-            // D. Checkout İşlemleri: Chewbacca yönlendirmesi varsa işlemleri tamamlıyoruz.
+            // D. Chewbacca → Cheetah yönlendirmesi işlemi
             if (url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
                 console.log("Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
                 setTimeout(() => {
