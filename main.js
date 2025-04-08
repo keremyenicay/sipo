@@ -37,6 +37,7 @@
             return true;
         }
 
+        // DOM içeriği yüklenirken MutationObserver ile bekliyoruz
         const observer = new MutationObserver((mutations, obs) => {
             if (insertCustomButton()) {
                 obs.disconnect();
@@ -48,33 +49,25 @@
     // --- Amazon.com Ürün & Sepet Akışı ---
     else if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
-            // Eğer sayfa URL'si "cart/smart-wagon" içeriyorsa; yani sepete ekleme sonrası
+
+            // Eğer URL "/cart/smart-wagon" içeriyorsa, yani sepete ekleme sonrası bu sayfaya gelinmişse
             if (window.location.href.indexOf("cart/smart-wagon") > -1) {
-                console.log("Smart Wagon sayfası tespit edildi.");
-                // "Proceed to checkout" butonunu mümkün olan en hızlı şekilde tespit edip tıklamak için bir kontrol döngüsü başlatıyoruz:
-                let intervalId = setInterval(function () {
-                    // Butonun input etiketi şeklinde olması bekleniyor
-                    const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
-                    if (proceedBtn) {
-                        console.log("Proceed to checkout butonu bulundu, tıklanıyor...");
-                        proceedBtn.click();
-                        clearInterval(intervalId);
-                        // Butona tıkladıktan 500ms sonra adres seçimi sayfasına yönlendirme yapıyoruz
-                        setTimeout(() => {
-                            window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
-                        }, 500);
-                    }
-                }, 300); // Her 300ms kontrol ediyoruz
-                return; // Diğer kodlara girilmesin
+                console.log("Smart Wagon sayfası tespit edildi; direkt son sayfaya yönlendiriliyor...");
+                // Hemen (örneğin 100ms sonra) son sayfaya yönlendiriyoruz:
+                setTimeout(function () {
+                    window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+                }, 100);
+                return; // Diğer işlemlere gerek yok
             }
             
-            // Ürün detay sayfasında add-to-cart işlemini hızlandırmak için gecikmeyi azaltıyoruz.
+            // Ürün detay sayfasında add-to-cart işlemini hızlandırıyoruz:
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
-                console.log("Amazon: Ürün sayfasından Add to Cart butonuna tıklanıyor.");
+                console.log("Amazon: Ürün sayfasından Add to Cart butonuna hızlıca tıklanıyor.");
+                // Daha kısa gecikme ile tıklama (örneğin 200ms)
                 setTimeout(function () {
                     addToCartBtn.click();
-                }, 500); // 500ms sonra tıklama
+                }, 200);
             }
         });
     }
