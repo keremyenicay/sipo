@@ -15,7 +15,8 @@
             const customButton = document.createElement('button');
             customButton.id = 'custom-buy-button';
             customButton.textContent = "Affiliate Satın Al";
-            customButton.style.cssText = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
+            customButton.style.cssText =
+                "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
             container.parentNode.insertBefore(customButton, container.nextSibling);
 
             customButton.addEventListener('click', function (e) {
@@ -37,7 +38,7 @@
             return true;
         }
 
-        // DOM içeriği yüklenirken MutationObserver ile bekliyoruz
+        // DOM içeriği yüklendiğinde MutationObserver ile bekle
         const observer = new MutationObserver((mutations, obs) => {
             if (insertCustomButton()) {
                 obs.disconnect();
@@ -45,31 +46,47 @@
         });
         observer.observe(document.documentElement, { childList: true, subtree: true });
     }
-
-    // --- Amazon.com Ürün & Sepet Akışı ---
+    
+    // --- Amazon.com Ürün ve Sepet Akışı ---
     else if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
 
-            // "cart/smart-wagon" URL'si tespit ediliyorsa:
+            // CASE A: Smart Wagon Sayfası
             if (window.location.href.indexOf("cart/smart-wagon") > -1) {
                 console.log("Smart Wagon sayfası tespit edildi.");
-                // Eğer bayrak set edilmemişse sayfayı yenile ve bayrağı ayarla
+
+                // İlk kez geldiyse sayfayı yenile ve bayrak ayarla
                 if (!sessionStorage.getItem("smartWagonReloaded")) {
                     sessionStorage.setItem("smartWagonReloaded", "true");
-                    console.log("Sayfa yenileniyor...");
+                    console.log("Smart Wagon: Sayfa yenileniyor...");
                     window.location.reload();
                 } else {
-                    // Bayrak set edildiyse, artık yönlendirmeye geçiyoruz
-                    console.log("Yenileme sonrası, son sayfaya yönlendiriliyor...");
-                    sessionStorage.removeItem("smartWagonReloaded");
-                    setTimeout(function () {
-                        window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
-                    }, 100);
+                    // Yenileme sonrası Proceed to checkout butonunu tespit edip tıklama
+                    console.log("Yenileme sonrası Proceed to checkout butonu aranıyor...");
+                    let intervalId = setInterval(() => {
+                        const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
+                        if (proceedBtn) {
+                            console.log("Proceed to checkout butonu bulundu, tıklanıyor...");
+                            proceedBtn.click();
+                            clearInterval(intervalId);
+                        }
+                    }, 300);
                 }
-                return; // Diğer işlemlere gerek yok
+                return; // Diğer işlemler yapılmasın
             }
             
-            // Ürün detay sayfasında add-to-cart işlemini hızlandırıyoruz:
+            // CASE B: Chewbacca (Checkout) Sayfası
+            if (window.location.href.indexOf("/checkout/p/") > -1 &&
+                window.location.href.indexOf("pipelineType=Chewbacca") > -1) {
+                console.log("Chewbacca checkout sayfası tespit edildi, cheetah'a yönlendiriliyor...");
+                // Kısa bir gecikme sonrası cheetah (adres seçimi) sayfasına yönlendiriyoruz
+                setTimeout(function () {
+                    window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+                }, 100);
+                return;
+            }
+            
+            // CASE C: Ürün Detay Sayfası (Add-to-Cart İşlemi)
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
                 console.log("Amazon: Ürün sayfasından Add to Cart butonuna hızlıca tıklanıyor.");
