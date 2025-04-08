@@ -50,13 +50,22 @@
     else if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
 
-            // Eğer URL "/cart/smart-wagon" içeriyorsa, yani sepete ekleme sonrası bu sayfaya gelinmişse
+            // "cart/smart-wagon" URL'si tespit ediliyorsa:
             if (window.location.href.indexOf("cart/smart-wagon") > -1) {
-                console.log("Smart Wagon sayfası tespit edildi; direkt son sayfaya yönlendiriliyor...");
-                // Hemen (örneğin 100ms sonra) son sayfaya yönlendiriyoruz:
-                setTimeout(function () {
-                    window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
-                }, 100);
+                console.log("Smart Wagon sayfası tespit edildi.");
+                // Eğer bayrak set edilmemişse sayfayı yenile ve bayrağı ayarla
+                if (!sessionStorage.getItem("smartWagonReloaded")) {
+                    sessionStorage.setItem("smartWagonReloaded", "true");
+                    console.log("Sayfa yenileniyor...");
+                    window.location.reload();
+                } else {
+                    // Bayrak set edildiyse, artık yönlendirmeye geçiyoruz
+                    console.log("Yenileme sonrası, son sayfaya yönlendiriliyor...");
+                    sessionStorage.removeItem("smartWagonReloaded");
+                    setTimeout(function () {
+                        window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+                    }, 100);
+                }
                 return; // Diğer işlemlere gerek yok
             }
             
@@ -64,7 +73,6 @@
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
                 console.log("Amazon: Ürün sayfasından Add to Cart butonuna hızlıca tıklanıyor.");
-                // Daha kısa gecikme ile tıklama (örneğin 200ms)
                 setTimeout(function () {
                     addToCartBtn.click();
                 }, 200);
