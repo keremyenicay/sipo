@@ -10,32 +10,52 @@
                 return;
             }
 
-            // URL’de quantity parametresi varsa, ürün sayfasındaki quantity dropdown’dan seçimi gerçekleştir
-            const quantityParam = params.get("quantity");
-            if (quantityParam) {
-                let tryQuantity = setInterval(() => {
+            const url = window.location.href;
+
+            // Ürün detay (dp) sayfasında: önce adet ayarlanıp, sonra sepete ekleme gerçekleşsin
+            if (url.includes("/dp/")) {
+                // Adet (quantity) seçimini gerçekleştir ve ardından Add to Cart tıklansın
+                let quantitySet = false;
+                let setQuantityInterval = setInterval(() => {
                     const quantitySelect = document.getElementById("quantity");
                     if (quantitySelect) {
-                        clearInterval(tryQuantity);
-                        if (quantitySelect.querySelector(`option[value="${quantityParam}"]`)) {
+                        const quantityParam = params.get("quantity");
+                        if (quantityParam && quantitySelect.querySelector(`option[value="${quantityParam}"]`)) {
                             quantitySelect.value = quantityParam;
                             quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
                         }
+                        quantitySet = true;
+                    }
+                    if (quantitySet) {
+                        clearInterval(setQuantityInterval);
+                        let tryAdd = setInterval(() => {
+                            const addToCartBtn = document.getElementById('add-to-cart-button');
+                            if (addToCartBtn) {
+                                clearInterval(tryAdd);
+                                setTimeout(() => {
+                                    console.log("Add to Cart butonuna tıklanıyor...");
+                                    addToCartBtn.click();
+                                }, 500);
+                            }
+                        }, 300);
                     }
                 }, 300);
+                return;
             }
 
-            const url = window.location.href;
-
-            // 1️⃣ SMART-WAGON sayfası: Önce sayfayı 1 defa yenile
+            // 1️⃣ SMART-WAGON sayfası: Sayfayı 1 defa yenile, ardından Go to Cart linkine tıkla
             if (url.includes("cart/smart-wagon")) {
                 console.log("Smart-wagon sayfası algılandı.");
-                const reloaded = sessionStorage.getItem("smartWagonReloaded");
+                // Yeni sekmede sessionStorage sıfırlandığından localStorage kullanıyoruz
+                const reloaded = localStorage.getItem("smartWagonReloaded");
                 if (!reloaded) {
                     console.log("Sayfa yenileniyor (ilk giriş).");
-                    sessionStorage.setItem("smartWagonReloaded", "true");
+                    localStorage.setItem("smartWagonReloaded", "true");
                     location.reload();
                     return;
+                } else {
+                    // Yenileme işlemi tamamlandıktan sonra, reloaded bayrağını kaldırıyoruz.
+                    localStorage.removeItem("smartWagonReloaded");
                 }
                 let tryGoToCart = setInterval(() => {
                     const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
@@ -48,7 +68,7 @@
                 return;
             }
 
-            // 2️⃣ CART sayfası → Proceed to checkout
+            // 2️⃣ CART sayfası → Proceed to checkout işlemi
             if (url.includes("/cart") && !url.includes("smart-wagon")) {
                 let tryProceed = setInterval(() => {
                     const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
@@ -69,15 +89,6 @@
                 }, 100);
                 return;
             }
-
-            // 4️⃣ Ürün Detay sayfasında "Add to cart" butonunu tıklama (adet seçimi yapıldıktan sonra)
-            const addToCartBtn = document.getElementById('add-to-cart-button');
-            if (addToCartBtn) {
-                console.log("Add to Cart butonuna tıklanıyor...");
-                setTimeout(() => {
-                    addToCartBtn.click();
-                }, 200);
-            }
         });
     }
 
@@ -85,7 +96,6 @@
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
-
             const card = document.querySelector('.card.p-mb-3');
             if (card) {
                 const btn = document.createElement('button');
@@ -93,22 +103,18 @@
                 btn.textContent = "Affiliate Satın Al";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
                 card.parentNode.insertBefore(btn, card.nextSibling);
-
                 btn.addEventListener('click', () => {
                     const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
                     const asin = asinLink ? asinLink.textContent.trim() : null;
                     const quantityText = document.querySelector('span.p-badge-info');
                     const quantity = quantityText ? parseInt(quantityText.textContent.trim()) : 1;
-
                     if (!asin) {
                         alert("ASIN bulunamadı.");
                         return;
                     }
-
-                    // sipo tetikleyici ve quantity parametresi eklenmiş URL
+                    // sipo=true ve quantity parametresi eklenmiş URL
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
-
-                    // Yeni sekmede açmak için anchor elementi oluşturuluyor
+                    // Yeni sekmede açmak için anchor elementi kullanılıyor
                     var a = document.createElement('a');
                     a.href = affiliateURL;
                     a.target = '_blank';
@@ -118,7 +124,6 @@
                 });
             }
         });
-
         observer.observe(document.body, { childList: true, subtree: true });
     }
 })();
