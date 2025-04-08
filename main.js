@@ -1,105 +1,102 @@
-// main.js - GitHub (keremyenicay/sipo)
-// Bu dosya, Sellerflash sipariş detay sayfası ve Amazon akışındaki işlemleri
-// (ürün detay, sepete ekleme, smart wagon, Go to Cart, proceed-to-checkout ve Chewbacca/cheetah yönlendirmesi)
-// hızlıca gerçekleştirir.
 (function () {
     'use strict';
 
-    // --- Sellerflash: Sipariş detay sayfası (/sellerOrder/...) ---
-    if (window.location.host.includes("panel.sellerflash.com") &&
-        window.location.pathname.includes("/sellerOrder/")) {
-
-        function insertCustomButton() {
-            const container = document.querySelector('.card.p-mb-3');
-            if (!container) return false;
-            if (document.getElementById('custom-buy-button')) return true;
-
-            const customButton = document.createElement('button');
-            customButton.id = 'custom-buy-button';
-            customButton.textContent = "Affiliate Satın Al";
-            customButton.style.cssText =
-                "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
-            container.parentNode.insertBefore(customButton, container.nextSibling);
-
-            customButton.addEventListener('click', function (e) {
-                e.preventDefault();
-                const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
-                if (!asinLink) {
-                    alert("ASIN bilgisi bulunamadı!");
-                    return;
-                }
-                const asin = asinLink.textContent.trim();
-                const quantitySpan = document.querySelector('span.p-badge-info');
-                const quantity = quantitySpan ? (parseInt(quantitySpan.textContent.trim()) || 1) : 1;
-                console.log("ASIN: " + asin + " - Adet: " + quantity);
-                const affiliateURL = "https://www.amazon.com/dp/" + asin +
-                    "?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl";
-                console.log("Affiliate URL'ye yönlendiriliyor:", affiliateURL);
-                window.location.href = affiliateURL;
-            });
-            return true;
-        }
-
-        // DOM içeriği yüklendiğinde MutationObserver ile bekle
-        const observer = new MutationObserver((mutations, obs) => {
-            if (insertCustomButton()) {
-                obs.disconnect();
-            }
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-    }
-    
-    // --- Amazon.com Ürün ve Sepet Akışı ---
-    else if (window.location.host.includes("www.amazon.com")) {
+    // AMAZON SAYFALARI
+    if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
 
-            // CASE A: Smart Wagon Sayfası → Go to Cart
-            if (window.location.href.indexOf("cart/smart-wagon") > -1) {
-                console.log("Smart Wagon sayfası tespit edildi.");
-                let intervalId = setInterval(() => {
-                    // "Go to Cart" butonunu seçiyoruz (genellikle href="/cart?ref_=sw_gtc")
+            const url = window.location.href;
+
+            // 1️⃣ SMART-WAGON sayfası: Önce sayfayı 1 defa yenile
+            if (url.includes("cart/smart-wagon")) {
+                console.log("Smart-wagon sayfası algılandı.");
+
+                // Sadece bir kez yenileme yapmak için localStorage kullan
+                const reloaded = sessionStorage.getItem("smartWagonReloaded");
+                if (!reloaded) {
+                    console.log("Sayfa yenileniyor (ilk giriş).");
+                    sessionStorage.setItem("smartWagonReloaded", "true");
+                    location.reload();
+                    return;
+                }
+
+                // Sayfa yenilendiyse: Go to Cart'a tıklama
+                let tryGoToCart = setInterval(() => {
                     const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
                     if (goToCartLink) {
-                        console.log("Go to Cart link bulundu, tıklanıyor...");
-                        clearInterval(intervalId);
+                        console.log("Go to Cart bulundu → tıklanıyor.");
+                        clearInterval(tryGoToCart);
                         goToCartLink.click();
                     }
                 }, 300);
-                return; // Diğer işlemler yapılmasın
+
+                return;
             }
-            
-            // CASE B: Cart Sayfası → Proceed to checkout
-            if (window.location.href.indexOf("/cart") > -1 && window.location.href.indexOf("smart-wagon") === -1) {
-                console.log("Cart sayfası tespit edildi, Proceed to checkout butonu aranıyor...");
-                let intervalId = setInterval(() => {
+
+            // 2️⃣ CART sayfası → Proceed to checkout
+            if (url.includes("/cart") && !url.includes("smart-wagon")) {
+                let tryProceed = setInterval(() => {
                     const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
                     if (proceedBtn) {
-                        console.log("Proceed to checkout butonu bulundu, tıklanıyor...");
-                        clearInterval(intervalId);
+                        console.log("Proceed to checkout bulundu → tıklanıyor.");
+                        clearInterval(tryProceed);
                         proceedBtn.click();
                     }
                 }, 300);
+
                 return;
             }
-            
-            // CASE C: Chewbacca (Checkout) Sayfası → Yönlendirerek cheetah'a geçiş
-            if (window.location.href.indexOf("/checkout/p/") > -1 &&
-                window.location.href.indexOf("pipelineType=Chewbacca") > -1) {
-                console.log("Chewbacca checkout sayfası tespit edildi, cheetah'a yönlendiriliyor...");
-                setTimeout(function () {
+
+            // 3️⃣ Checkout → Chewbacca → Cheetah yönlendirmesi
+            if (url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
+                console.log("Chewbacca sayfası algılandı → Cheetah'a yönlendiriliyor...");
+                setTimeout(() => {
                     window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
                 }, 100);
                 return;
             }
-            
-            // CASE D: Ürün Detay Sayfası → Add-to-Cart (hâlâ ürün sayfasındaysanız)
+
+            // 4️⃣ Ürün Detay → Add to cart
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
-                console.log("Amazon: Ürün sayfasından Add to Cart butonuna hızlıca tıklanıyor.");
-                setTimeout(function () {
+                console.log("Add to Cart butonuna tıklanıyor...");
+                setTimeout(() => {
                     addToCartBtn.click();
                 }, 200);
             }
         });
+    }
+
+    // SELLERFLASH
+    if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
+        const observer = new MutationObserver(() => {
+            if (document.getElementById('custom-buy-button')) return;
+
+            const card = document.querySelector('.card.p-mb-3');
+            if (card) {
+                const btn = document.createElement('button');
+                btn.id = 'custom-buy-button';
+                btn.textContent = "Affiliate Satın Al";
+                btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
+                card.parentNode.insertBefore(btn, card.nextSibling);
+
+                btn.addEventListener('click', () => {
+                    const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
+                    const asin = asinLink ? asinLink.textContent.trim() : null;
+                    const quantityText = document.querySelector('span.p-badge-info');
+                    const quantity = quantityText ? parseInt(quantityText.textContent.trim()) : 1;
+
+                    if (!asin) {
+                        alert("ASIN bulunamadı.");
+                        return;
+                    }
+
+                    const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl`;
+                    window.location.href = affiliateURL;
+                });
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 })();
