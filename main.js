@@ -82,7 +82,7 @@
                 // Kısa bir gecikme sonrası cheetah (adres seçimi) sayfasına yönlendiriyoruz
                 setTimeout(function () {
                     window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
-                }, 100);
+                }, 300);
                 return;
             }
             
