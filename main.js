@@ -4,6 +4,26 @@
     // AMAZON SAYFALARI
     if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
+            // Sadece buton tetiklenmiş (sipo parametresi eklenmiş) durumlarda çalışsın.
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("sipo") !== "true") {
+                return;
+            }
+
+            // Eğer quantity parametresi varsa, ürün sayfasındaki quantity dropdown’dan seçimi gerçekleştir.
+            const quantityParam = params.get("quantity");
+            if (quantityParam) {
+                let tryQuantity = setInterval(() => {
+                    const quantitySelect = document.getElementById("quantity");
+                    if (quantitySelect) {
+                        clearInterval(tryQuantity);
+                        if (quantitySelect.querySelector(`option[value="${quantityParam}"]`)) {
+                            quantitySelect.value = quantityParam;
+                            quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                }, 300);
+            }
 
             const url = window.location.href;
 
@@ -11,7 +31,7 @@
             if (url.includes("cart/smart-wagon")) {
                 console.log("Smart-wagon sayfası algılandı.");
 
-                // Sadece bir kez yenileme yapmak için localStorage kullan
+                // Sadece bir kez yenileme yapmak için sessionStorage kullanıyoruz
                 const reloaded = sessionStorage.getItem("smartWagonReloaded");
                 if (!reloaded) {
                     console.log("Sayfa yenileniyor (ilk giriş).");
@@ -20,7 +40,7 @@
                     return;
                 }
 
-                // Sayfa yenilendiyse: Go to Cart'a tıklama
+                // Sayfa yenilendiyse: Go to Cart linkini tıklama
                 let tryGoToCart = setInterval(() => {
                     const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
                     if (goToCartLink) {
@@ -29,7 +49,6 @@
                         goToCartLink.click();
                     }
                 }, 300);
-
                 return;
             }
 
@@ -43,7 +62,6 @@
                         proceedBtn.click();
                     }
                 }, 300);
-
                 return;
             }
 
@@ -56,7 +74,7 @@
                 return;
             }
 
-            // 4️⃣ Ürün Detay → Add to cart
+            // 4️⃣ Ürün Detay sayfasında "Add to cart" butonunu tıklama (adet seçimi yapıldıktan sonra)
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
                 console.log("Add to Cart butonuna tıklanıyor...");
@@ -67,7 +85,7 @@
         });
     }
 
-    // SELLERFLASH
+    // SELLERFLASH - Butona basıldığında işlemin yeni sekmede çalışarak devam etmesi
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
@@ -91,8 +109,9 @@
                         return;
                     }
 
-                    const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl`;
-                    window.location.href = affiliateURL;
+                    // Yeni sekmede açılacak URL'ye sipo tetikleyici ve quantity parametresini ekliyoruz
+                    const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
+                    window.open(affiliateURL, '_blank');
                 });
             }
         });
