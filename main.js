@@ -73,9 +73,33 @@
         return;
     }
 
-    // C. Sepet Sayfası (/cart/)
+    // C. Sepet Sayfası (/cart/) – SEPET KONTROLÜ, TEMİZLEME VE ÜRÜN EKLEME
     if (isSipo && url.includes("/cart") && !url.includes("smart-wagon")) {
         console.log("🔹 Sepet sayfası algılandı.");
+
+        // Eğer sepette ürün varsa, tüm ürünleri sil.
+        const deleteBtns = document.querySelectorAll('button[data-action="a-stepper-decrement"]');
+        if (deleteBtns.length > 0) {
+            console.log("🗑 Sepette ürün(ler) bulundu. Temizleniyor...");
+            deleteBtns.forEach(btn => {
+                const productName = btn.getAttribute('aria-label');
+                console.log("Siliniyor:", productName);
+                btn.click();
+            });
+            setTimeout(() => {
+                console.log("✅ Sepet temizlendi, ürün ekleniyor...");
+                const asin = params.get("asin");
+                const quantity = params.get("quantity") || "1";
+                if (asin) {
+                    window.location.href = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
+                } else {
+                    console.log("ASIN parametresi bulunamadı, ürün eklenemiyor.");
+                }
+            }, 2000);
+            return;
+        }
+
+        // Eğer sepette ürün yoksa; mevcut sepet güncelleme ve Proceed to checkout kodu çalışır.
         const desiredQuantity = params.get("quantity") || "1";
         let tryCartUpdate = setInterval(() => {
             const quantityInput = document.querySelector('input[name="quantityBox"]');
