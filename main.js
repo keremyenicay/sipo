@@ -33,29 +33,32 @@
     // B. SMART WAGON SAYFASI (/cart/smart-wagon):  
     // Önce sessionStorage ile sayfa yenilemesi sağlanır; yenilendikten sonra "Go to Cart" butonuna tıklanır.
     if (url.includes("cart/smart-wagon")) {
-        console.log("🔹 Smart-wagon sayfası algılandı.");
+    console.log("🔹 Smart-wagon sayfası algılandı.");
 
-        // Sadece bir kez yenileme yapmak için sessionStorage kullan
-        const reloaded = sessionStorage.getItem("smartWagonReloaded");
-        if (!reloaded) {
-            console.log("🔁 Sayfa yenileniyor (ilk giriş).");
-            sessionStorage.setItem("smartWagonReloaded", "true");
-            location.reload();
-            return;
-        }
+    const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
 
-        // Yenileme gerçekleştiyse bayrağı temizle ve "Go to Cart" linkine tıkla
-        sessionStorage.removeItem("smartWagonReloaded");
-        let tryGoToCart = setInterval(() => {
-            const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
-            if (goToCartLink) {
-                clearInterval(tryGoToCart);
-                console.log("➡️ Go to Cart bulundu, tıklanıyor.");
-                goToCartLink.click();
-            }
-        }, 300);
+    if (!alreadyReloaded) {
+        console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
+        sessionStorage.setItem("smartWagonReloaded", "true");
+        location.reload();
         return;
     }
+
+    // Sayfa yenilendikten sonra bu kısım çalışır
+    console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
+    sessionStorage.removeItem("smartWagonReloaded"); // Bayrağı kaldır
+
+    let tryGoToCart = setInterval(() => {
+        const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
+        if (goToCartLink) {
+            clearInterval(tryGoToCart);
+            console.log("➡️ Go to Cart bulundu, tıklanıyor.");
+            goToCartLink.click();
+        }
+    }, 300);
+
+    return;
+}
 
     // C. SEPET SAYFASI (/cart):  
     // Sepet sayfasında, sepet içindeki adet input (quantityBox) güncellenir,
