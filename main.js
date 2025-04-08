@@ -44,8 +44,8 @@
                 return;
             }
 
-            // B. Smart-Wagon Sayfası (/cart/smart-wagon): 
-            // Sayfa yenilemesi yapılmadan direkt "Go to Cart" butonuna tıklanır.
+            // B. Smart-Wagon Sayfası (/cart/smart-wagon):
+            // Sayfa yeni pencere açılmadan, mevcut sayfada "Go to Cart" butonuna tıklanarak ilerleniyor.
             if (url.includes("cart/smart-wagon")) {
                 console.log("Smart-wagon sayfası algılandı, Go to Cart butonuna tıklanıyor.");
                 let tryGoToCart = setInterval(() => {
@@ -59,9 +59,9 @@
                 return;
             }
 
-            // C. Cart Sayfası (/cart): 
-            // Gelen sepet sayfasında, miktar input (quantityBox) üzerinden istenen adet ayarlanıp, 
-            // Update butonuna tıklanır ardından Proceed to Checkout işlemi gerçekleştirilir.
+            // C. Cart Sayfası (/cart):  
+            // Gelen sepet sayfasında istenen adet "quantityBox" inputuyla güncellenip Update butonuna basılıyor,
+            // ardından Proceed to Checkout adımına geçiliyor.
             if (url.includes("/cart") && !url.includes("smart-wagon")) {
                 console.log("Cart sayfası algılandı.");
                 let tryCartUpdate = setInterval(() => {
@@ -125,13 +125,8 @@
                     }
                     // URL’ye sipo=true ve quantity parametresi ekleniyor.
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
-                    // Buton tıklanınca yeni sekmede ürün sayfası açılması sağlanıyor.
-                    var a = document.createElement('a');
-                    a.href = affiliateURL;
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    // Yeni pencere açma kodu kaldırılarak, mevcut sayfa üzerinden yönlendirme yapılıyor.
+                    window.location.href = affiliateURL;
                 });
             }
         });
