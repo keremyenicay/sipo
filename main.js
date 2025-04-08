@@ -91,7 +91,7 @@
                 const asin = params.get("asin");
                 const quantity = params.get("quantity") || "1";
                 if (asin) {
-                    window.location.href = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
+                    window.location.href = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
                 } else {
                     console.log("ASIN parametresi bulunamadı, ürün eklenemiyor.");
                 }
