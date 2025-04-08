@@ -1,7 +1,12 @@
 (function () {
     'use strict';
 
+    // Affiliate link şablonu (sabit parametreler)
+    const affiliateTemplate = "https://www.amazon.com/dp/{asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl";
+
     const params = new URLSearchParams(window.location.search);
+    // Eğer URL’de "asin" parametresi geçiyorsa onu kullan, aksi halde diğer bölümlerde kullanmak üzere boş bırakıyoruz.
+    const asinParam = params.get("asin"); 
     const isSipo = params.get("sipo") === "true";
     const url = window.location.href;
 
@@ -43,9 +48,8 @@
             return;
         }
 
-        // Sayfa yenilendikten sonra bu kısım çalışır
         console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
-        sessionStorage.removeItem("smartWagonReloaded"); // Bayrağı kaldır
+        sessionStorage.removeItem("smartWagonReloaded");
 
         let tryGoToCart = setInterval(() => {
             const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
@@ -77,7 +81,6 @@
     if (isSipo && url.includes("/cart") && !url.includes("smart-wagon")) {
         console.log("🔹 Sepet sayfası algılandı.");
 
-        // Eğer sepette ürün varsa, tüm ürünleri sil.
         const deleteBtns = document.querySelectorAll('button[data-action="a-stepper-decrement"]');
         if (deleteBtns.length > 0) {
             console.log("🗑 Sepette ürün(ler) bulundu. Temizleniyor...");
@@ -88,18 +91,20 @@
             });
             setTimeout(() => {
                 console.log("✅ Sepet temizlendi, ürün ekleniyor...");
-                const asin = params.get("asin");
-                const quantity = params.get("quantity") || "1";
-                if (asin) {
-                    window.location.href = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
-                } else {
-                    console.log("ASIN parametresi bulunamadı, ürün eklenemiyor.");
+                // Eğer URL'de asin parametresi varsa, o değer kullanılacak;
+                // yoksa, daha önce çekilmiş olan ya da sellerflash sayfasında dinamik ASIN ile ilerleyebilirsiniz.
+                let finalAsin = asinParam;
+                if (!finalAsin) {
+                    // örneğin, başka bir alandan ASIN çekilebilir ya da uyarı verilebilir.
+                    console.log("ASIN parametresi bulunamadı, yönlendirme yapılamıyor.");
+                    return;
                 }
+                const affiliateURL = affiliateTemplate.replace("{asin}", finalAsin) + `&sipo=true&quantity=${params.get("quantity") || "1"}`;
+                window.location.href = affiliateURL;
             }, 2000);
             return;
         }
 
-        // Eğer sepette ürün yoksa; mevcut sepet güncelleme ve Proceed to checkout kodu çalışır.
         const desiredQuantity = params.get("quantity") || "1";
         let tryCartUpdate = setInterval(() => {
             const quantityInput = document.querySelector('input[name="quantityBox"]');
@@ -129,7 +134,7 @@
     }
 
     // D. Chewbacca → Cheetah Yönlendirmesi
-    if (isSipo && url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
+    if (isSipo && url.includes("/checkout/p/") && url.includes("pipelineType=Cheetah")) {
         console.log("🚚 Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
         setTimeout(() => {
             window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
@@ -149,15 +154,23 @@
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
                 card.parentNode.insertBefore(btn, card.nextSibling);
                 btn.addEventListener('click', () => {
-                    const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
-                    const asin = asinLink ? asinLink.textContent.trim() : null;
-                    const quantityBadge = document.querySelector('span.p-badge-info');
-                    const quantity = quantityBadge ? parseInt(quantityBadge.textContent.trim()) : 1;
-                    if (!asin) {
+                    // SellerFlash sayfasında, ASIN sayfadaki bir linkten çekiliyor
+                    const asinLink = document.querySelector('a[href*="/dp/"]');
+                    if (!asinLink) {
                         alert("ASIN bulunamadı.");
                         return;
                     }
-                    const affiliateURL = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
+                    const href = asinLink.getAttribute("href");
+                    const asinMatch = href.match(/\/dp\/([A-Z0-9]{10})/);
+                    const asin = asinMatch ? asinMatch[1] : null;
+                    if (!asin) {
+                        alert("ASIN çekilemedi.");
+                        return;
+                    }
+                    // Ayrıca, varsa quantity bilgisini de SellerFlash sayfasındaki ilgili elementten çekelim:
+                    const quantityBadge = document.querySelector('span.p-badge-info');
+                    const quantity = quantityBadge ? parseInt(quantityBadge.textContent.trim()) : 1;
+                    const affiliateURL = affiliateTemplate.replace("{asin}", asin) + `&sipo=true&quantity=${quantity}`;
                     window.location.href = affiliateURL;
                 });
             }
