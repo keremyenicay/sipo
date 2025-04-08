@@ -3,13 +3,13 @@
 
     const params = new URLSearchParams(window.location.search);
     const isSipo = params.get("sipo") === "true";
-    const currentURL = window.location.href;
+    const url = window.location.href;
 
-    // A. ÜRÜN SAYFASI (/dp/): Ürünün detay sayfasında adet ayarlanıp "Add to Cart" tıklanıyor.
-    if (isSipo && currentURL.includes("/dp/")) {
+    // A. ÜRÜN SAYFASI (/dp/): Adet ayarlanıp "Add to Cart" tıklanıyor.
+    if (isSipo && url.includes("/dp/")) {
         console.log("🔹 Ürün sayfası algılandı.");
         const quantity = params.get("quantity") || "1";
-        let setQuantity = setInterval(() => {
+        let setQuantityInterval = setInterval(() => {
             const quantitySelect = document.getElementById("quantity");
             if (quantitySelect) {
                 if (quantitySelect.querySelector(`option[value="${quantity}"]`)) {
@@ -17,12 +17,12 @@
                     quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
                     console.log("✅ Ürün adedi ayarlandı:", quantity);
                 }
-                clearInterval(setQuantity);
+                clearInterval(setQuantityInterval);
                 setTimeout(() => {
-                    const addBtn = document.getElementById("add-to-cart-button");
-                    if (addBtn) {
-                        console.log("🛒 Add to Cart tıklanıyor...");
-                        addBtn.click();
+                    const addToCartBtn = document.getElementById("add-to-cart-button");
+                    if (addToCartBtn) {
+                        console.log("🛒 Add to Cart butonuna tıklanıyor...");
+                        addToCartBtn.click();
                     }
                 }, 500);
             }
@@ -30,33 +30,37 @@
         return;
     }
 
-    // B. SMART WAGON SAYFASI (/cart/smart-wagon):
-    // URL hangi parametrelerle gelirse gelsin, sayfa gelince önce sayfayı yenile, ardından "Go to Cart" butonuna tıklanıyor.
-    if (currentURL.includes("/cart/smart-wagon")) {
-        console.log("🔹 Smart Wagon sayfası algılandı.");
-        // Sayfayı sadece 1 kere yenilemek için hash kontrolü yapıyoruz.
-        if (!window.location.hash.includes("#refreshed")) {
-            console.log("🔁 Sayfa yenileniyor...");
-            window.location.hash = "#refreshed";
-            window.location.reload();
+    // B. SMART WAGON SAYFASI (/cart/smart-wagon):  
+    // Önce sessionStorage ile sayfa yenilemesi sağlanır; yenilendikten sonra "Go to Cart" butonuna tıklanır.
+    if (url.includes("cart/smart-wagon")) {
+        console.log("🔹 Smart-wagon sayfası algılandı.");
+
+        // Sadece bir kez yenileme yapmak için sessionStorage kullan
+        const reloaded = sessionStorage.getItem("smartWagonReloaded");
+        if (!reloaded) {
+            console.log("🔁 Sayfa yenileniyor (ilk giriş).");
+            sessionStorage.setItem("smartWagonReloaded", "true");
+            location.reload();
             return;
-        } else {
-            console.log("🔁 Sayfa yenileme tamamlandı. Go to Cart butonuna tıklanıyor...");
-            let tryGoToCart = setInterval(() => {
-                const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
-                if (goToCartLink) {
-                    clearInterval(tryGoToCart);
-                    console.log("➡️ Go to Cart bulundu, tıklanıyor.");
-                    goToCartLink.click();
-                }
-            }, 300);
         }
+
+        // Yenileme gerçekleştiyse bayrağı temizle ve "Go to Cart" linkine tıkla
+        sessionStorage.removeItem("smartWagonReloaded");
+        let tryGoToCart = setInterval(() => {
+            const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
+            if (goToCartLink) {
+                clearInterval(tryGoToCart);
+                console.log("➡️ Go to Cart bulundu, tıklanıyor.");
+                goToCartLink.click();
+            }
+        }, 300);
         return;
     }
 
-    // C. SEPET SAYFASI (/cart):
-    // Gelen sepet sayfasında, sepet içeriğinde bulunan adet input (quantityBox) üzerinden güncelleme yapılıp ardından Proceed to Checkout butonuna tıklanıyor.
-    if (isSipo && currentURL.includes("/cart") && !currentURL.includes("smart-wagon")) {
+    // C. SEPET SAYFASI (/cart):  
+    // Sepet sayfasında, sepet içindeki adet input (quantityBox) güncellenir,
+    // ardından Update ve Proceed to Checkout butonlarına tıklanır.
+    if (isSipo && url.includes("/cart") && !url.includes("smart-wagon")) {
         console.log("🔹 Sepet sayfası algılandı.");
         const desiredQuantity = params.get("quantity") || "1";
         let tryCartUpdate = setInterval(() => {
@@ -67,9 +71,9 @@
                     console.log("🔧 Sepetteki adet güncelleniyor. Yeni değer:", desiredQuantity);
                     quantityInput.value = desiredQuantity;
                     quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    const updateBtn = document.querySelector('.sc-quantity-update-button a');
-                    if (updateBtn) {
-                        updateBtn.click();
+                    const updateButton = document.querySelector('.sc-quantity-update-button a');
+                    if (updateButton) {
+                        updateButton.click();
                         console.log("🛠 Update butonuna tıklandı.");
                     }
                 }
@@ -86,8 +90,8 @@
         return;
     }
 
-    // D. CHEWBACCA → CHEETAH YÖNLENDİRMESİ
-    if (isSipo && currentURL.includes("/checkout/p/") && currentURL.includes("pipelineType=Chewbacca")) {
+    // D. CHEWBACCA → CHEETAH YÖNLENDİRMESİ:
+    if (isSipo && url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
         console.log("🚚 Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
         setTimeout(() => {
             window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
@@ -95,7 +99,7 @@
         return;
     }
 
-    // E. SELLERFLASH: Affiliate Satın Al Butonu
+    // E. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
@@ -115,7 +119,7 @@
                         alert("ASIN bulunamadı.");
                         return;
                     }
-                    // Yönlendirme URL'sine sipo=true ve quantity parametreleri ekleniyor.
+                    // Yönlendirme URL'sine sipo=true ve quantity parametresi ekleniyor.
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?sipo=true&quantity=${quantity}`;
                     window.location.href = affiliateURL;
                 });
