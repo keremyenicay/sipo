@@ -4,13 +4,13 @@
     // AMAZON SAYFALARI
     if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
-            // Sadece buton tetiklenmiş (sipo parametresi eklenmiş) durumlarda çalışsın.
+            // Kod ancak URL'de sipo=true parametresi varsa çalışır
             const params = new URLSearchParams(window.location.search);
             if (params.get("sipo") !== "true") {
                 return;
             }
 
-            // Eğer quantity parametresi varsa, ürün sayfasındaki quantity dropdown’dan seçimi gerçekleştir.
+            // URL’de quantity parametresi varsa, ürün sayfasındaki quantity dropdown’dan seçimi gerçekleştir
             const quantityParam = params.get("quantity");
             if (quantityParam) {
                 let tryQuantity = setInterval(() => {
@@ -30,8 +30,6 @@
             // 1️⃣ SMART-WAGON sayfası: Önce sayfayı 1 defa yenile
             if (url.includes("cart/smart-wagon")) {
                 console.log("Smart-wagon sayfası algılandı.");
-
-                // Sadece bir kez yenileme yapmak için sessionStorage kullanıyoruz
                 const reloaded = sessionStorage.getItem("smartWagonReloaded");
                 if (!reloaded) {
                     console.log("Sayfa yenileniyor (ilk giriş).");
@@ -39,8 +37,6 @@
                     location.reload();
                     return;
                 }
-
-                // Sayfa yenilendiyse: Go to Cart linkini tıklama
                 let tryGoToCart = setInterval(() => {
                     const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
                     if (goToCartLink) {
@@ -85,7 +81,7 @@
         });
     }
 
-    // SELLERFLASH - Butona basıldığında işlemin yeni sekmede çalışarak devam etmesi
+    // SELLERFLASH SAYFASI: Affiliate Satın Al butonu işlemleri
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
@@ -109,9 +105,16 @@
                         return;
                     }
 
-                    // Yeni sekmede açılacak URL'ye sipo tetikleyici ve quantity parametresini ekliyoruz
+                    // sipo tetikleyici ve quantity parametresi eklenmiş URL
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
-                    window.open(affiliateURL, '_blank');
+
+                    // Yeni sekmede açmak için anchor elementi oluşturuluyor
+                    var a = document.createElement('a');
+                    a.href = affiliateURL;
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
                 });
             }
         });
