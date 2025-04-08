@@ -1,5 +1,7 @@
 // main.js - GitHub (keremyenicay/sipo)
-// Bu dosya, Sellerflash sipariş detay sayfası ve Amazon akışındaki işlemleri hızlandırarak gerçekleştirir.
+// Bu dosya, Sellerflash sipariş detay sayfası ve Amazon akışındaki işlemleri
+// (ürün detay, sepete ekleme, smart wagon, Go to Cart, proceed-to-checkout ve Chewbacca/cheetah yönlendirmesi)
+// hızlıca gerçekleştirir.
 (function () {
     'use strict';
 
@@ -51,42 +53,46 @@
     else if (window.location.host.includes("www.amazon.com")) {
         window.addEventListener('load', function () {
 
-            // CASE A: Smart Wagon Sayfası
+            // CASE A: Smart Wagon Sayfası → Go to Cart
             if (window.location.href.indexOf("cart/smart-wagon") > -1) {
                 console.log("Smart Wagon sayfası tespit edildi.");
-
-                // İlk kez geldiyse sayfayı yenile ve bayrak ayarla
-                if (!sessionStorage.getItem("smartWagonReloaded")) {
-                    sessionStorage.setItem("smartWagonReloaded", "true");
-                    console.log("Smart Wagon: Sayfa yenileniyor...");
-                    window.location.reload();
-                } else {
-                    // Yenileme sonrası Proceed to checkout butonunu tespit edip tıklama
-                    console.log("Yenileme sonrası Proceed to checkout butonu aranıyor...");
-                    let intervalId = setInterval(() => {
-                        const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
-                        if (proceedBtn) {
-                            console.log("Proceed to checkout butonu bulundu, tıklanıyor...");
-                            proceedBtn.click();
-                            clearInterval(intervalId);
-                        }
-                    }, 300);
-                }
+                let intervalId = setInterval(() => {
+                    // "Go to Cart" butonunu seçiyoruz (genellikle href="/cart?ref_=sw_gtc")
+                    const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
+                    if (goToCartLink) {
+                        console.log("Go to Cart link bulundu, tıklanıyor...");
+                        clearInterval(intervalId);
+                        goToCartLink.click();
+                    }
+                }, 300);
                 return; // Diğer işlemler yapılmasın
             }
             
-            // CASE B: Chewbacca (Checkout) Sayfası
-            if (window.location.href.indexOf("/checkout/p/") > -1 &&
-                window.location.href.indexOf("pipelineType=Chewbacca") > -1) {
-                console.log("Chewbacca checkout sayfası tespit edildi, cheetah'a yönlendiriliyor...");
-                // Kısa bir gecikme sonrası cheetah (adres seçimi) sayfasına yönlendiriyoruz
-                setTimeout(function () {
-                    window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+            // CASE B: Cart Sayfası → Proceed to checkout
+            if (window.location.href.indexOf("/cart") > -1 && window.location.href.indexOf("smart-wagon") === -1) {
+                console.log("Cart sayfası tespit edildi, Proceed to checkout butonu aranıyor...");
+                let intervalId = setInterval(() => {
+                    const proceedBtn = document.querySelector('input[name="proceedToRetailCheckout"]');
+                    if (proceedBtn) {
+                        console.log("Proceed to checkout butonu bulundu, tıklanıyor...");
+                        clearInterval(intervalId);
+                        proceedBtn.click();
+                    }
                 }, 300);
                 return;
             }
             
-            // CASE C: Ürün Detay Sayfası (Add-to-Cart İşlemi)
+            // CASE C: Chewbacca (Checkout) Sayfası → Yönlendirerek cheetah'a geçiş
+            if (window.location.href.indexOf("/checkout/p/") > -1 &&
+                window.location.href.indexOf("pipelineType=Chewbacca") > -1) {
+                console.log("Chewbacca checkout sayfası tespit edildi, cheetah'a yönlendiriliyor...");
+                setTimeout(function () {
+                    window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+                }, 100);
+                return;
+            }
+            
+            // CASE D: Ürün Detay Sayfası → Add-to-Cart (hâlâ ürün sayfasındaysanız)
             const addToCartBtn = document.getElementById('add-to-cart-button');
             if (addToCartBtn) {
                 console.log("Amazon: Ürün sayfasından Add to Cart butonuna hızlıca tıklanıyor.");
