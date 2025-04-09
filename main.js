@@ -54,17 +54,17 @@
                 localStorage.setItem('amazonOrderId', orderId);
                 localStorage.setItem('amazonOrderTotal', total);
 
-                // Daha önce tıklanan Sellerflash sipariş sayfası URL'sini al.
-                const sellerflashRef = localStorage.getItem("sellerflashRef");
-                if (!sellerflashRef) {
-                    console.error("❌ Sellerflash referans URL bulunamadı.");
+                // Sellerflash sipariş sayfası URL'sini localStorage'dan alıyoruz.
+                const sellerflashPage = localStorage.getItem("sellerflashPage");
+                if (!sellerflashPage) {
+                    console.error("❌ Sellerflash sipariş sayfası URL bulunamadı.");
                     return;
                 }
-                console.log("Sellerflash geri dönüş URL'si:", sellerflashRef);
+                console.log("Geri dönülecek Sellerflash URL:", sellerflashPage);
 
                 // 2 saniye bekledikten sonra Sellerflash sipariş sayfasına yönlendir.
                 setTimeout(() => {
-                    window.location.href = sellerflashRef;
+                    window.location.href = sellerflashPage;
                 }, 2000);
             }
         }, 500);
@@ -204,14 +204,10 @@
     // ─────────────────────────────────────────────
     // 3. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu ve Sipariş Bilgilerinin Girilmesi
     // ─────────────────────────────────────────────
-    if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
-        console.log("🔹 Sellerflash sipariş sayfası algılandı.");
-
-        // Sellerflash sipariş sayfasında, sipariş verme butonuna basılırken bu sayfanın URL'si kaydedilsin.
-        if (!localStorage.getItem("sellerflashRef")) {
-            localStorage.setItem("sellerflashRef", window.location.href);
-            console.log("Sellerflash referans URL kaydedildi:", window.location.href);
-        }
+    if (url.includes("panel.sellerflash.com/sellerOrder/")) {
+        // Burada Sellerflash sipariş sayfasına girildiğinde linkteki order id'yi içeren URL'yi zorunlu olarak kaydediyoruz.
+        console.log("🔹 Sellerflash sipariş sayfası algılandı:", window.location.href);
+        localStorage.setItem("sellerflashPage", window.location.href);
 
         // Mevcut affiliate satın al butonu ekleme işlemi
         const observer = new MutationObserver(() => {
@@ -222,8 +218,8 @@
                 btn.id = 'custom-buy-button';
                 btn.textContent = "Affiliate Satın Al";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
-                // Buton eklenmeden önce mevcut URL (order id içeren Sellerflash sipariş sayfası) tekrar kaydediliyor.
-                localStorage.setItem("sellerflashRef", window.location.href);
+                // Buton eklenmeden önce yine mevcut sipariş sayfası URL'si kaydediliyor.
+                localStorage.setItem("sellerflashPage", window.location.href);
                 card.parentNode.insertBefore(btn, card.nextSibling);
                 btn.addEventListener('click', () => {
                     const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
@@ -285,7 +281,6 @@
                                 // İşlem tamamlandıktan sonra ilgili localStorage verileri temizleniyor.
                                 localStorage.removeItem('amazonOrderId');
                                 localStorage.removeItem('amazonOrderTotal');
-                                localStorage.removeItem("sellerflashRef");
                             } else {
                                 console.error("❌ Kaydet butonu bulunamadı.");
                             }
