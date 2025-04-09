@@ -35,8 +35,8 @@
                 // RegEx ile sipariş numarası ve toplam fiyatı alınmaya çalışılıyor.
                 let orderId = "";
                 let total = "";
-                const orderIdMatch = textContent.match(/Order\s*#?\s*([\d-]+)/i);
-                const totalMatch = textContent.match(/(\d+\.\d{2})\s*USD/i);
+                const orderIdMatch = textContent.match(/ORDER\s*#\s*([\d-]+)/i);
+                const totalMatch = textContent.match(/\$(\d+\.\d{2})/);
                 if (orderIdMatch) {
                     orderId = orderIdMatch[1];
                 }
