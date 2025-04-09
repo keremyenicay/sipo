@@ -70,6 +70,98 @@
     // 2. AMAZON ÜRÜN / CART VE DİĞER AMAZON SAYFALARI
     // ─────────────────────────────────────────────
 
+    // A. Ürün Sayfası (/dp/) - KUPON VE İNDİRİM İŞLEMLERİ EKLENDİ
+    if (isSipo && url.includes("/dp/")) {
+        console.log("🔹 Ürün sayfası algılandı.");
+        const quantity = params.get("quantity") || "1";
+
+        // Önce kupon/indirim kontrolü yapılacak
+        setTimeout(() => {
+            console.log("🔍 Kupon ve indirim kontrolü yapılıyor...");
+
+            // Kupon ve marka indirimi kontrolü
+            const promoBlock = document.querySelector("#promoPriceBlockMessage_feature_div");
+            if (promoBlock) {
+                console.log("✅ Kupon/indirim alanı bulundu.");
+
+                // Kupon checkbox kontrolü
+                const couponCheckboxes = promoBlock.querySelectorAll(".a-icon-checkbox");
+                if (couponCheckboxes.length > 0) {
+                    console.log(`🎫 ${couponCheckboxes.length} adet kupon checkbox'ı bulundu.`);
+                    couponCheckboxes.forEach((checkbox, index) => {
+                        setTimeout(() => {
+                            console.log(`Kupon #${index+1} seçiliyor...`);
+                            checkbox.click();
+                        }, 500 + (index * 300)); // Her kupon için biraz bekle
+                    });
+                }
+
+                // Redeem butonları kontrolü
+                const redeemButtons = promoBlock.querySelectorAll("input.a-button-input[type='submit']");
+                if (redeemButtons.length > 0) {
+                    console.log(`💰 ${redeemButtons.length} adet redeem butonu bulundu.`);
+                    redeemButtons.forEach((button, index) => {
+                        setTimeout(() => {
+                            console.log(`Redeem butonu #${index+1} tıklanıyor...`);
+                            button.click();
+                        }, 2000 + (index * 500)); // Kuponlardan sonra çalışacak
+                    });
+                }
+
+                if (couponCheckboxes.length === 0 && redeemButtons.length === 0) {
+                    console.log("ℹ️ Tıklanabilir kupon veya indirim bulunamadı.");
+                }
+            } else {
+                console.log("ℹ️ Bu üründe kupon/indirim alanı bulunmuyor.");
+            }
+
+            // Miktar ayarlama ve sepete ekleme
+            setTimeout(() => {
+                let quantitySelect = document.getElementById("quantity");
+                if (quantitySelect) {
+                    if (quantitySelect.querySelector(`option[value="${quantity}"]`)) {
+                        quantitySelect.value = quantity;
+                        quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log("✅ Ürün adedi ayarlandı:", quantity);
+                    }
+
+                    setTimeout(() => {
+                        const addToCartBtn = document.getElementById("add-to-cart-button");
+                        if (addToCartBtn) {
+                            console.log("🛒 Add to Cart tıklanıyor...");
+                            addToCartBtn.click();
+                        }
+                    }, 500);
+                }
+            }, 3000); // Kupon işlemleri için yeterli süre bekle
+        }, 1500); // Sayfa yüklenmesi için biraz bekle
+
+        return;
+    }
+
+    // B. Smart Wagon Sayfası (/cart/smart-wagon/)
+    if (url.includes("cart/smart-wagon")) {
+        console.log("🔹 Smart-wagon sayfası algılandı.");
+        const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
+        if (!alreadyReloaded) {
+            console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
+            sessionStorage.setItem("smartWagonReloaded", "true");
+            location.reload();
+            return;
+        }
+        console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
+        sessionStorage.removeItem("smartWagonReloaded");
+        let tryGoToCart = setInterval(() => {
+            const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
+            if (goToCartLink) {
+                clearInterval(tryGoToCart);
+                console.log("➡️ Go to Cart bulundu, tıklanıyor.");
+                goToCartLink.click();
+            }
+        }, 300);
+        return;
+    }
+
     // C. Sepet Sayfası (/cart/) – SEPET KONTROLÜ, TEMİZLEME VE ÜRÜN EKLEME
     if (isSipo && url.includes("/cart") && !url.includes("smart-wagon")) {
         console.log("🔹 Sepet sayfası algılandı.");
@@ -123,54 +215,6 @@
         return;
     }
 
-    // A. Ürün Sayfası (/dp/)
-    if (isSipo && url.includes("/dp/")) {
-        console.log("🔹 Ürün sayfası algılandı.");
-        const quantity = params.get("quantity") || "1";
-        let setQuantityInterval = setInterval(() => {
-            const quantitySelect = document.getElementById("quantity");
-            if (quantitySelect) {
-                if (quantitySelect.querySelector(`option[value="${quantity}"]`)) {
-                    quantitySelect.value = quantity;
-                    quantitySelect.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log("✅ Ürün adedi ayarlandı:", quantity);
-                }
-                clearInterval(setQuantityInterval);
-                setTimeout(() => {
-                    const addToCartBtn = document.getElementById("add-to-cart-button");
-                    if (addToCartBtn) {
-                        console.log("🛒 Add to Cart tıklanıyor...");
-                        addToCartBtn.click();
-                    }
-                }, 500);
-            }
-        }, 300);
-        return;
-    }
-
-    // B. Smart Wagon Sayfası (/cart/smart-wagon/)
-    if (url.includes("cart/smart-wagon")) {
-        console.log("🔹 Smart-wagon sayfası algılandı.");
-        const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
-        if (!alreadyReloaded) {
-            console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
-            sessionStorage.setItem("smartWagonReloaded", "true");
-            location.reload();
-            return;
-        }
-        console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
-        sessionStorage.removeItem("smartWagonReloaded");
-        let tryGoToCart = setInterval(() => {
-            const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
-            if (goToCartLink) {
-                clearInterval(tryGoToCart);
-                console.log("➡️ Go to Cart bulundu, tıklanıyor.");
-                goToCartLink.click();
-            }
-        }, 300);
-        return;
-    }
-
     // YENİ EK: Cart sayfası (ref_=sw_gtc) açıldığında Proceed to checkout butonuna tıklama
     if (url.includes("/cart?ref_=sw_gtc")) {
         console.log("🔹 Cart ref sw_gtc sayfası algılandı.");
@@ -208,7 +252,7 @@
             if (card) {
                 const btn = document.createElement('button');
                 btn.id = 'custom-buy-button';
-                btn.textContent = "Affiliate Satın Al (Yeni Sekme)";
+                btn.textContent = "Affiliate Satın Al";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
 
                 // Buton element fonksiyonu
@@ -230,7 +274,7 @@
                 });
 
                 card.parentNode.insertBefore(btn, card.nextSibling);
-                console.log("✅ Affiliate Satın Al (Yeni Sekme) butonu eklendi");
+                console.log("✅ Affiliate Satın Al butonu eklendi");
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
