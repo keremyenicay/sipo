@@ -203,7 +203,7 @@
         // Amazon sipariş bilgilerini GM_getValue ile çek
         const amazonOrderId = GM_getValue('amazonOrderId', null);
         const amazonOrderTotal = GM_getValue('amazonOrderTotal', null);
-        
+
         // Bilgiler varsa, konsola yazdır
         if (amazonOrderId && amazonOrderTotal) {
             console.log("📋 Amazon sipariş bilgileri bulundu: ", {
@@ -215,32 +215,32 @@
         // Mevcut affiliate satın al butonu ekleme işlemi
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
-            
+
             const card = document.querySelector('.card.p-mb-3');
             if (card) {
                 const btn = document.createElement('button');
                 btn.id = 'custom-buy-button';
                 btn.textContent = "Affiliate Satın Al (Yeni Sekme)";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
-                
+
                 // Buton element fonksiyonu
                 btn.addEventListener('click', () => {
                     const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
                     const asin = asinLink ? asinLink.textContent.trim() : null;
                     const quantityBadge = document.querySelector('span.p-badge-info');
                     const quantity = quantityBadge ? parseInt(quantityBadge.textContent.trim()) : 1;
-                    
+
                     if (!asin) {
                         alert("ASIN bulunamadı.");
                         return;
                     }
-                    
+
                     // YENİ: Yeni sekmede affiliate linki aç
                     const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&newTab=true&quantity=${quantity}`;
                     console.log("🔗 Yeni sekmede açılacak URL:", affiliateURL);
                     window.open(affiliateURL, '_blank');
                 });
-                
+
                 card.parentNode.insertBefore(btn, card.nextSibling);
                 console.log("✅ Affiliate Satın Al (Yeni Sekme) butonu eklendi");
             }
@@ -249,38 +249,66 @@
 
         // ──────────────
         // YENİ EK: Amazon'dan çekilen sipariş bilgileri varsa,
-        // düzenleme (kalem) butonuna tıklanınca açılan modaldaki alanları otomatik doldur.
+        // düzenleme (kalem) butonuna otomatik tıkla ve bilgileri doldur
         // ──────────────
         if (amazonOrderId && amazonOrderTotal) {
-            console.log("✅ Amazon sipariş bilgileri bulundu. Sellerflash modali için veriler hazırlanıyor.");
+            console.log("✅ Amazon sipariş bilgileri bulundu. Otomatik kayıt işlemi başlatılıyor.");
             const formattedTotal = amazonOrderTotal.replace('.', ',');
-            const attachEditListener = setInterval(() => {
-                const editButton = document.querySelector('button.p-button-icon-only.p-button-text');
+
+            // Otomatik olarak kalem butonuna tıkla
+            setTimeout(() => {
+                // Özel CSS selector kullanarak kalem butonunu seç
+                const editButton = document.querySelector("#app > div > div > div > div.layout-content > div > div > div > div > div > div.p-col-12.p-xl-9.p-lg-8 > div.p-mt-3 > div > div > div.p-dataview-content > div > div > div.p-col.p-grid.p-ai-center.p-jc-center.p-ml-0.p-mr-0 > div > div > div:nth-child(1) > button");
+
+                // Genel selector yöntemi (eğer özel selector çalışmazsa)
+                if (!editButton) {
+                    console.log("⚠️ Özel selector ile kalem butonu bulunamadı, genel selector deneniyor.");
+                    editButton = document.querySelector('button.p-button-icon-only.p-button-text');
+                }
+
                 if (editButton) {
-                    clearInterval(attachEditListener);
-                    console.log("✅ Düzenleme (kalem) butonu bulundu, event listener ekleniyor.");
-                    editButton.addEventListener('click', () => {
+                    console.log("🖊️ Kalem butonu bulundu, otomatik tıklanıyor.");
+                    editButton.click();
+
+                    // Modal açıldıktan sonra form alanlarını doldur
+                    setTimeout(() => {
+                        const buyerOrderNumberInput = document.getElementById("buyerOrderNumber");
+                        const emailInput = document.getElementById("email");
+                        const priceInput = document.querySelector('input.p-inputnumber-input');
+
+                        if (buyerOrderNumberInput) {
+                            buyerOrderNumberInput.value = amazonOrderId;
+                            buyerOrderNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            console.log("Order ID alanına yazıldı:", amazonOrderId);
+                        } else {
+                            console.error("❌ Order ID alanı bulunamadı");
+                        }
+
+                        if (emailInput) {
+                            emailInput.value = "keremyenicay0028@gmail.com";
+                            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            console.log("Email alanına yazıldı: keremyenicay0028@gmail.com");
+                        } else {
+                            console.error("❌ Email alanı bulunamadı");
+                        }
+
+                        if (priceInput) {
+                            priceInput.value = formattedTotal;
+                            priceInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            console.log("Fiyat alanına yazıldı:", formattedTotal);
+                        } else {
+                            console.error("❌ Fiyat alanı bulunamadı");
+                        }
+
+                        // Kaydet butonunu bul ve tıkla
                         setTimeout(() => {
-                            const buyerOrderNumberInput = document.getElementById("buyerOrderNumber");
-                            const emailInput = document.getElementById("email");
-                            const priceInput = document.querySelector('input.p-inputnumber-input');
-                            if (buyerOrderNumberInput) {
-                                buyerOrderNumberInput.value = amazonOrderId;
-                                console.log("Order ID alanına yazıldı:", amazonOrderId);
-                            }
-                            if (emailInput) {
-                                emailInput.value = "keremyenicay0028@gmail.com";
-                                console.log("Email alanına yazıldı: keremyenicay0028@gmail.com");
-                            }
-                            if (priceInput) {
-                                priceInput.value = formattedTotal;
-                                console.log("Fiyat alanına yazıldı:", formattedTotal);
-                            }
                             const saveButton = Array.from(document.querySelectorAll('button'))
                                 .find(btn => btn.innerText.trim().includes("Kaydet"));
+
                             if (saveButton) {
+                                console.log("💾 Kaydet butonu bulundu, tıklanıyor.");
                                 saveButton.click();
-                                console.log("Kaydet butonuna tıklandı, sipariş bilgileri kaydedildi.");
+
                                 // Verileri temizle (görev tamamlandı)
                                 GM_deleteValue('amazonOrderId');
                                 GM_deleteValue('amazonOrderTotal');
@@ -289,10 +317,11 @@
                                 console.error("❌ Kaydet butonu bulunamadı.");
                             }
                         }, 500);
-                    });
-                    console.log("Düzenleme butonu için listener eklendi.");
+                    }, 1000);
+                } else {
+                    console.error("❌ Kalem butonu bulunamadı.");
                 }
-            }, 300);
+            }, 2000); // Sayfanın tam yüklenmesi için biraz bekle
         }
     }
 })();
