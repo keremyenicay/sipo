@@ -3,28 +3,8 @@
 
     const params = new URLSearchParams(window.location.search);
     const isSipo = params.get("sipo") === "true";
+    const isNewTab = params.get("newTab") === "true"; // Yeni sekme kontrolü
     const url = window.location.href;
-
-    // Yardımcı fonksiyonlar
-    function saveSellerflashURL(url) {
-        console.log("📌 Sellerflash URL kaydediliyor:", url);
-        localStorage.setItem("sellerflashPage", url);
-        // Yedekleme mekanizması olarak sessionStorage'a da kaydedelim
-        sessionStorage.setItem("sellerflashPage_backup", url);
-    }
-
-    function getSellerflashURL() {
-        // Önce localStorage'dan deneyelim, yoksa sessionStorage'dan alıp tekrar localStorage'a kaydedelim
-        let sellerflashURL = localStorage.getItem("sellerflashPage");
-        if (!sellerflashURL) {
-            sellerflashURL = sessionStorage.getItem("sellerflashPage_backup");
-            if (sellerflashURL) {
-                console.log("🔄 Sellerflash URL localStorage'dan alınamadı, sessionStorage yedeklemesi kullanılıyor.");
-                localStorage.setItem("sellerflashPage", sellerflashURL);
-            }
-        }
-        return sellerflashURL;
-    }
 
     // ─────────────────────────────────────────────
     // 0. AMAZON THANK YOU SAYFASI: Otomatik yönlendirme
@@ -32,7 +12,7 @@
     if (url.includes("amazon.com/gp/buy/thankyou/handlers/display.html")) {
         console.log("✅ Amazon thank you sayfası algılandı. Sipariş onaylandı.");
         setTimeout(() => {
-            window.location.replace("https://www.amazon.com/gp/css/order-history?ref_=nav_orders_first");
+            window.location.replace("https://www.amazon.com/gp/css/order-history?ref_=nav_orders_first&sipo=true&newTab=true");
         }, 2000);
         return;
     }
@@ -44,7 +24,7 @@
         console.log("✅ Amazon order history sayfası algılandı. Sipariş bilgileri çekiliyor...");
 
         const waitForOrderCard = setInterval(() => {
-            // Sipariş kartını içeren uygun bir selector kullanın (örneğin, '.order-card')
+            // Sipariş kartını içeren uygun bir selector kullanın
             const orderCard = document.querySelector('.order-card');
             if (orderCard) {
                 clearInterval(waitForOrderCard);
@@ -68,29 +48,19 @@
                 }
                 console.log("Bulunan Amazon Order ID:", orderId, "Toplam:", total);
 
-                // Amazon'dan çekilen sipariş bilgileri kaydediliyor.
-                localStorage.setItem('amazonOrderId', orderId);
-                localStorage.setItem('amazonOrderTotal', total);
+                // GM_setValue ile verileri tarayıcı genelinde kaydet
+                GM_setValue('amazonOrderId', orderId);
+                GM_setValue('amazonOrderTotal', total);
+                console.log("✅ Sipariş bilgileri GM_setValue ile kaydedildi");
 
-                // SessionStorage'a da yedekleyelim
-                sessionStorage.setItem('amazonOrderId_backup', orderId);
-                sessionStorage.setItem('amazonOrderTotal_backup', total);
-
-                // Sellerflash sipariş sayfası URL'si alınır.
-                const sellerflashPage = getSellerflashURL();
-                if (!sellerflashPage) {
-                    console.error("❌ Sellerflash sipariş sayfası URL bulunamadı.");
-                    // Manuel çözüm önerisi
-                    if (confirm("Sellerflash sipariş sayfası URL'si bulunamadı. Sellerflash ana paneline yönlendirilmek ister misiniz?")) {
-                        window.location.href = "https://panel.sellerflash.com/";
-                    }
-                    return;
+                // Bilgileri çektikten sonra sekmeyi kapat (yeni sekme modunda ise)
+                if (isNewTab) {
+                    console.log("✅ İşlem tamamlandı, sekme kapatılıyor...");
+                    // Biraz bekleyip sekmeyi kapat
+                    setTimeout(() => {
+                        window.close();
+                    }, 1000);
                 }
-                console.log("Geri dönülecek Sellerflash URL:", sellerflashPage);
-
-                setTimeout(() => {
-                    window.location.href = sellerflashPage;
-                }, 2000);
             }
         }, 500);
         return;
@@ -117,7 +87,7 @@
                 const asin = params.get("asin");
                 const quantity = params.get("quantity") || "1";
                 if (asin) {
-                    window.location.href = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
+                    window.location.href = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&newTab=true&quantity=${quantity}`;
                 } else {
                     console.log("ASIN parametresi bulunamadı, ürün eklenemiyor.");
                 }
@@ -219,7 +189,7 @@
     if (isSipo && url.includes("/checkout/p/") && url.includes("pipelineType=Chewbacca")) {
         console.log("🚚 Chewbacca sayfası algılandı → Cheetah yönlendirmesi yapılıyor...");
         setTimeout(() => {
-            window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah";
+            window.location.href = "https://www.amazon.com/gp/buy/addressselect/handlers/display.html?_from=cheetah&sipo=true&newTab=true";
         }, 100);
         return;
     }
@@ -229,57 +199,50 @@
     // ─────────────────────────────────────────────
     if (url.includes("panel.sellerflash.com/sellerOrder/")) {
         console.log("🔹 Sellerflash sipariş sayfası algılandı:", window.location.href);
-        // Sayfaya her girişte URL kaydet
-        saveSellerflashURL(window.location.href);
 
-        // Amazon sipariş bilgilerini localStorage'dan çek, eğer yoksa sessionStorage'dan kontrol et
-        const amazonOrderId = localStorage.getItem('amazonOrderId') || sessionStorage.getItem('amazonOrderId_backup');
-        const amazonOrderTotal = localStorage.getItem('amazonOrderTotal') || sessionStorage.getItem('amazonOrderTotal_backup');
-
-        // Eğer sessionStorage'dan geldiyse localStorage'a da kaydet
-        if (!localStorage.getItem('amazonOrderId') && amazonOrderId) {
-            localStorage.setItem('amazonOrderId', amazonOrderId);
-        }
-        if (!localStorage.getItem('amazonOrderTotal') && amazonOrderTotal) {
-            localStorage.setItem('amazonOrderTotal', amazonOrderTotal);
+        // Amazon sipariş bilgilerini GM_getValue ile çek
+        const amazonOrderId = GM_getValue('amazonOrderId', null);
+        const amazonOrderTotal = GM_getValue('amazonOrderTotal', null);
+        
+        // Bilgiler varsa, konsola yazdır
+        if (amazonOrderId && amazonOrderTotal) {
+            console.log("📋 Amazon sipariş bilgileri bulundu: ", {
+                OrderID: amazonOrderId,
+                Total: amazonOrderTotal
+            });
         }
 
         // Mevcut affiliate satın al butonu ekleme işlemi
         const observer = new MutationObserver(() => {
             if (document.getElementById('custom-buy-button')) return;
+            
             const card = document.querySelector('.card.p-mb-3');
             if (card) {
                 const btn = document.createElement('button');
                 btn.id = 'custom-buy-button';
-                btn.textContent = "Affiliate Satın Al";
+                btn.textContent = "Affiliate Satın Al (Yeni Sekme)";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
-
-                // Sellerflash URL'sini kaydet ve kontrol et
-                saveSellerflashURL(window.location.href);
-                card.parentNode.insertBefore(btn, card.nextSibling);
-
+                
                 // Buton element fonksiyonu
                 btn.addEventListener('click', () => {
-                    // Tıklama anında URL'yi tekrar kaydet (en kritik nokta)
-                    saveSellerflashURL(window.location.href);
-
                     const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
                     const asin = asinLink ? asinLink.textContent.trim() : null;
                     const quantityBadge = document.querySelector('span.p-badge-info');
                     const quantity = quantityBadge ? parseInt(quantityBadge.textContent.trim()) : 1;
-
+                    
                     if (!asin) {
                         alert("ASIN bulunamadı.");
                         return;
                     }
-
-                    // URL'yi kontrol edelim ve debug bilgisi gösterelim
-                    const storedURL = getSellerflashURL();
-                    console.log("Sellerflash URL kontrolü (tıklama anında):", storedURL);
-
-                    const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&quantity=${quantity}`;
-                    window.location.href = affiliateURL;
+                    
+                    // YENİ: Yeni sekmede affiliate linki aç
+                    const affiliateURL = `https://www.amazon.com/dp/${asin}?th=1&linkCode=sl1&tag=newgrl0b-20&linkId=1f6d87753d9002b73e8d461aa9ffda14&language=en_US&ref_=as_li_ss_tl&sipo=true&newTab=true&quantity=${quantity}`;
+                    console.log("🔗 Yeni sekmede açılacak URL:", affiliateURL);
+                    window.open(affiliateURL, '_blank');
                 });
+                
+                card.parentNode.insertBefore(btn, card.nextSibling);
+                console.log("✅ Affiliate Satın Al (Yeni Sekme) butonu eklendi");
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -318,9 +281,10 @@
                             if (saveButton) {
                                 saveButton.click();
                                 console.log("Kaydet butonuna tıklandı, sipariş bilgileri kaydedildi.");
-                                // Sadece localStorage'dan temizle, sessionStorage'dan yedekleri tut
-                                localStorage.removeItem('amazonOrderId');
-                                localStorage.removeItem('amazonOrderTotal');
+                                // Verileri temizle (görev tamamlandı)
+                                GM_deleteValue('amazonOrderId');
+                                GM_deleteValue('amazonOrderTotal');
+                                console.log("✅ Sipariş bilgileri temizlendi (görev tamamlandı)");
                             } else {
                                 console.error("❌ Kaydet butonu bulunamadı.");
                             }
