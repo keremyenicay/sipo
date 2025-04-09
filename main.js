@@ -18,10 +18,10 @@
     }
 
     // ─────────────────────────────────────────────
-    // 1. AMAZON ORDER HISTORY SAYFASI: Sipariş Bilgilerinin Çekilmesi
+    // 1. AMAZON ORDER HISTORY SAYFASI: Sipariş Bilgilerinin Gösterilmesi (Manuel Mod)
     // ─────────────────────────────────────────────
     if (url.includes("amazon.com/gp/css/order-history")) {
-        console.log("✅ Amazon order history sayfası algılandı. Sipariş bilgileri çekiliyor...");
+        console.log("✅ Amazon order history sayfası algılandı. Manuel mod aktif.");
 
         const waitForOrderCard = setInterval(() => {
             // Sipariş kartını içeren uygun bir selector kullanın
@@ -48,19 +48,19 @@
                 }
                 console.log("Bulunan Amazon Order ID:", orderId, "Toplam:", total);
 
-                // GM_setValue ile verileri tarayıcı genelinde kaydet
-                GM_setValue('amazonOrderId', orderId);
-                GM_setValue('amazonOrderTotal', total);
-                console.log("✅ Sipariş bilgileri GM_setValue ile kaydedildi");
+                // Manuel mod: Sipariş bilgilerini gösteren bir bilgi kutusu ekle
+                const infoBox = document.createElement('div');
+                infoBox.style = "position: fixed; top: 10px; right: 10px; background-color: #f0f8ff; border: 2px solid #ff9900; padding: 15px; border-radius: 5px; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 350px;";
+                infoBox.innerHTML = `
+                    <h3 style="margin-top: 0; color: #232f3e;">Sipariş Bilgileri (Manuel Mod)</h3>
+                    <p><strong>Sipariş ID:</strong> <span style="color: #B12704; font-weight: bold;">${orderId}</span></p>
+                    <p><strong>Toplam Tutar:</strong> <span style="color: #B12704; font-weight: bold;">$${total}</span></p>
+                    <p style="margin-bottom: 0; font-style: italic; font-size: 12px;">Bu bilgileri Sellerflash'ta manuel olarak girebilirsiniz.</p>
+                `;
+                document.body.appendChild(infoBox);
+                console.log("✅ Bilgi kutusu eklendi. Sayfa otomatik kapanmayacak.");
 
-                // Bilgileri çektikten sonra sekmeyi kapat (yeni sekme modunda ise)
-                if (isNewTab) {
-                    console.log("✅ İşlem tamamlandı, sekme kapatılıyor...");
-                    // Biraz bekleyip sekmeyi kapat
-                    setTimeout(() => {
-                        window.close();
-                    }, 1000);
-                }
+                // NOT: Artık otomatik kapanma yok, kullanıcı manuel olarak bilgileri kopyalayabilir
             }
         }, 500);
         return;
@@ -195,22 +195,10 @@
     }
 
     // ─────────────────────────────────────────────
-    // 3. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu ve Sipariş Bilgilerinin Girilmesi
+    // 3. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu
     // ─────────────────────────────────────────────
     if (url.includes("panel.sellerflash.com/sellerOrder/")) {
         console.log("🔹 Sellerflash sipariş sayfası algılandı:", window.location.href);
-
-        // Amazon sipariş bilgilerini GM_getValue ile çek
-        const amazonOrderId = GM_getValue('amazonOrderId', null);
-        const amazonOrderTotal = GM_getValue('amazonOrderTotal', null);
-
-        // Bilgiler varsa, konsola yazdır
-        if (amazonOrderId && amazonOrderTotal) {
-            console.log("📋 Amazon sipariş bilgileri bulundu: ", {
-                OrderID: amazonOrderId,
-                Total: amazonOrderTotal
-            });
-        }
 
         // Mevcut affiliate satın al butonu ekleme işlemi
         const observer = new MutationObserver(() => {
@@ -246,82 +234,5 @@
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
-
-        // ──────────────
-        // YENİ EK: Amazon'dan çekilen sipariş bilgileri varsa,
-        // düzenleme (kalem) butonuna otomatik tıkla ve bilgileri doldur
-        // ──────────────
-        if (amazonOrderId && amazonOrderTotal) {
-            console.log("✅ Amazon sipariş bilgileri bulundu. Otomatik kayıt işlemi başlatılıyor.");
-            const formattedTotal = amazonOrderTotal.replace('.', ',');
-
-            // Otomatik olarak kalem butonuna tıkla
-            setTimeout(() => {
-                // Özel CSS selector kullanarak kalem butonunu seç
-                const editButton = document.querySelector("#app > div > div > div > div.layout-content > div > div > div > div > div > div.p-col-12.p-xl-9.p-lg-8 > div.p-mt-3 > div > div > div.p-dataview-content > div > div > div.p-col.p-grid.p-ai-center.p-jc-center.p-ml-0.p-mr-0 > div > div > div:nth-child(1) > button");
-
-                // Genel selector yöntemi (eğer özel selector çalışmazsa)
-                if (!editButton) {
-                    console.log("⚠️ Özel selector ile kalem butonu bulunamadı, genel selector deneniyor.");
-                    editButton = document.querySelector('button.p-button-icon-only.p-button-text');
-                }
-
-                if (editButton) {
-                    console.log("🖊️ Kalem butonu bulundu, otomatik tıklanıyor.");
-                    editButton.click();
-
-                    // Modal açıldıktan sonra form alanlarını doldur
-                    setTimeout(() => {
-                        const buyerOrderNumberInput = document.getElementById("buyerOrderNumber");
-                        const emailInput = document.getElementById("email");
-                        const priceInput = document.querySelector('input.p-inputnumber-input');
-
-                        if (buyerOrderNumberInput) {
-                            buyerOrderNumberInput.value = amazonOrderId;
-                            buyerOrderNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            console.log("Order ID alanına yazıldı:", amazonOrderId);
-                        } else {
-                            console.error("❌ Order ID alanı bulunamadı");
-                        }
-
-                        if (emailInput) {
-                            emailInput.value = "keremyenicay0028@gmail.com";
-                            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            console.log("Email alanına yazıldı: keremyenicay0028@gmail.com");
-                        } else {
-                            console.error("❌ Email alanı bulunamadı");
-                        }
-
-                        if (priceInput) {
-                            priceInput.value = formattedTotal;
-                            priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            console.log("Fiyat alanına yazıldı:", formattedTotal);
-                        } else {
-                            console.error("❌ Fiyat alanı bulunamadı");
-                        }
-
-                        // Kaydet butonunu bul ve tıkla
-                        setTimeout(() => {
-                            const saveButton = Array.from(document.querySelectorAll('button'))
-                                .find(btn => btn.innerText.trim().includes("Kaydet"));
-
-                            if (saveButton) {
-                                console.log("💾 Kaydet butonu bulundu, tıklanıyor.");
-                                saveButton.click();
-
-                                // Verileri temizle (görev tamamlandı)
-                                GM_deleteValue('amazonOrderId');
-                                GM_deleteValue('amazonOrderTotal');
-                                console.log("✅ Sipariş bilgileri temizlendi (görev tamamlandı)");
-                            } else {
-                                console.error("❌ Kaydet butonu bulunamadı.");
-                            }
-                        }, 500);
-                    }, 1000);
-                } else {
-                    console.error("❌ Kalem butonu bulunamadı.");
-                }
-            }, 2000); // Sayfanın tam yüklenmesi için biraz bekle
-        }
     }
 })();
