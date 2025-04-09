@@ -62,7 +62,7 @@
 
                 // NOT: Artık otomatik kapanma yok, kullanıcı manuel olarak bilgileri kopyalayabilir
             }
-        }, 500);
+        }, 300);
         return;
     }
 
@@ -92,7 +92,7 @@
                         setTimeout(() => {
                             console.log(`Kupon #${index+1} seçiliyor...`);
                             checkbox.click();
-                        }, 500 + (index * 300)); // Her kupon için biraz bekle
+                        }, 300 + (index * 100)); // Her kupon için biraz bekle
                     });
                 }
 
@@ -104,7 +104,7 @@
                         setTimeout(() => {
                             console.log(`Redeem butonu #${index+1} tıklanıyor...`);
                             button.click();
-                        }, 2000 + (index * 500)); // Kuponlardan sonra çalışacak
+                        }, 300 + (index * 100)); // Kuponlardan sonra çalışacak
                     });
                 }
 
@@ -131,10 +131,10 @@
                             console.log("🛒 Add to Cart tıklanıyor...");
                             addToCartBtn.click();
                         }
-                    }, 500);
+                    }, 300);
                 }
-            }, 3000); // Kupon işlemleri için yeterli süre bekle
-        }, 1500); // Sayfa yüklenmesi için biraz bekle
+            }, 300); // Kupon işlemleri için yeterli süre bekle
+        }, 300); // Sayfa yüklenmesi için biraz bekle
 
         return;
     }
