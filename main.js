@@ -13,7 +13,7 @@
         console.log("✅ Amazon thank you sayfası algılandı. Sipariş onaylandı.");
         setTimeout(() => {
             window.location.replace("https://www.amazon.com/gp/css/order-history?ref_=nav_orders_first&sipo=true&newTab=true");
-        }, 2000);
+        }, 500);
         return;
     }
 
