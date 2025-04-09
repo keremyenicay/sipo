@@ -23,9 +23,9 @@
     if (url.includes("amazon.com/gp/css/order-history")) {
         console.log("✅ Amazon order history sayfası algılandı. Sipariş bilgileri çekiliyor...");
 
-        // DOM öğelerinin yüklenmesi için bekleme fonksiyonu.
+        // Sipariş kartı DOM öğesinin yüklenmesi için bekleme fonksiyonu.
         const waitForOrderCard = setInterval(() => {
-            // Örneğin, '.order-card' veya mevcut yapıya uygun başka bir selector kullanılabilir.
+            // Örneğin, '.order-card' selector’ü kullanılabilir. Yapınıza uygun başka bir selector gerekebilir.
             const orderCard = document.querySelector('.order-card');
             if (orderCard) {
                 clearInterval(waitForOrderCard);
@@ -35,6 +35,7 @@
                 // RegEx ile sipariş numarası ve toplam fiyatı alınmaya çalışılıyor.
                 let orderId = "";
                 let total = "";
+                // Güncellenmiş RegEx ifadeleri:
                 const orderIdMatch = textContent.match(/ORDER\s*#\s*([\d-]+)/i);
                 const totalMatch = textContent.match(/\$(\d+\.\d{2})/);
                 if (orderIdMatch) {
@@ -53,8 +54,12 @@
                 localStorage.setItem('amazonOrderId', orderId);
                 localStorage.setItem('amazonOrderTotal', total);
 
-                // Daha önceden Sellerflash'da tıklanan sipariş sayfası URL'sini al.
-                const sellerflashRef = localStorage.getItem("sellerflashRef") || "https://panel.sellerflash.com/sellerOrder/";
+                // Daha önce tıklanan Sellerflash sipariş sayfası URL'sini al.
+                const sellerflashRef = localStorage.getItem("sellerflashRef");
+                if (!sellerflashRef) {
+                    console.error("❌ Sellerflash referans URL bulunamadı.");
+                    return;
+                }
                 console.log("Sellerflash geri dönüş URL'si:", sellerflashRef);
 
                 // 2 saniye bekledikten sonra Sellerflash sipariş sayfasına yönlendir.
@@ -154,17 +159,14 @@
         console.log("🔹 Smart-wagon sayfası algılandı.");
 
         const alreadyReloaded = sessionStorage.getItem("smartWagonReloaded");
-
         if (!alreadyReloaded) {
             console.log("🔁 İlk kez girildi, sayfa şimdi yenilenecek.");
             sessionStorage.setItem("smartWagonReloaded", "true");
             location.reload();
             return;
         }
-
         console.log("✅ Yenilenmiş sayfadayız, Go to Cart tıklanacak.");
         sessionStorage.removeItem("smartWagonReloaded");
-
         let tryGoToCart = setInterval(() => {
             const goToCartLink = document.querySelector("a[href='/cart?ref_=sw_gtc']");
             if (goToCartLink) {
@@ -173,7 +175,6 @@
                 goToCartLink.click();
             }
         }, 300);
-
         return;
     }
 
@@ -206,7 +207,7 @@
     if (window.location.href.includes("panel.sellerflash.com/sellerOrder/")) {
         console.log("🔹 Sellerflash sipariş sayfası algılandı.");
 
-        // Eğer Sellerflash sipariş sayfası açıldığında, bu sayfa URL'si ilk tıklamada kaydedilsin.
+        // Sellerflash sipariş sayfasında, sipariş verme butonuna basılırken bu sayfanın URL'si kaydedilsin.
         if (!localStorage.getItem("sellerflashRef")) {
             localStorage.setItem("sellerflashRef", window.location.href);
             console.log("Sellerflash referans URL kaydedildi:", window.location.href);
@@ -221,10 +222,10 @@
                 btn.id = 'custom-buy-button';
                 btn.textContent = "Affiliate Satın Al";
                 btn.style = "width: 100%; font-size: 15px; margin-top: 10px; background-color: #ff9900; color: white; border: none; padding: 10px; cursor: pointer;";
+                // Buton eklenmeden önce mevcut URL (order id içeren Sellerflash sipariş sayfası) tekrar kaydediliyor.
+                localStorage.setItem("sellerflashRef", window.location.href);
                 card.parentNode.insertBefore(btn, card.nextSibling);
                 btn.addEventListener('click', () => {
-                    // Affiliate linke tıklanmadan önce, tıklanan Sellerflash sipariş sayfasının URL'si tekrar kaydedilsin
-                    localStorage.setItem("sellerflashRef", window.location.href);
                     const asinLink = document.querySelector('a[href*="amazon.com/dp/"]');
                     const asin = asinLink ? asinLink.textContent.trim() : null;
                     const quantityBadge = document.querySelector('span.p-badge-info');
@@ -248,7 +249,7 @@
         const amazonOrderTotal = localStorage.getItem('amazonOrderTotal');
         if (amazonOrderId && amazonOrderTotal) {
             console.log("✅ Amazon sipariş bilgileri bulundu. Sellerflash modali için veriler hazırlanıyor.");
-            // Fiyatı virgüllü formata çevir (örneğin "54.99" => "54,99")
+            // Fiyatı virgüllü formata çevir (örneğin "85.00" => "85,00")
             const formattedTotal = amazonOrderTotal.replace('.', ',');
             // Düzenleme (kalem) butonunun sayfada oluşmasını bekliyoruz.
             const attachEditListener = setInterval(() => {
@@ -275,13 +276,13 @@
                                 priceInput.value = formattedTotal;
                                 console.log("Fiyat alanına yazıldı:", formattedTotal);
                             }
-                            // "Kaydet" butonunu bul ve tıkla. (Buton içerisinde <span>Kaydet</span> barındırıyor.)
+                            // "Kaydet" butonunu bul ve tıkla (Buton içerisinde 'Kaydet' ifadesi geçiyor).
                             const saveButton = Array.from(document.querySelectorAll('button'))
                                 .find(btn => btn.innerText.trim().includes("Kaydet"));
                             if (saveButton) {
                                 saveButton.click();
                                 console.log("Kaydet butonuna tıklandı, sipariş bilgileri kaydedildi.");
-                                // İşlem tamamlandıktan sonra ilgili localStorage bilgileri siliniyor.
+                                // İşlem tamamlandıktan sonra ilgili localStorage verileri temizleniyor.
                                 localStorage.removeItem('amazonOrderId');
                                 localStorage.removeItem('amazonOrderTotal');
                                 localStorage.removeItem("sellerflashRef");
