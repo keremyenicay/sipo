@@ -14,7 +14,7 @@
         console.log("✅ Amazon thank you sayfası algılandı. Sipariş onaylandı.");
         setTimeout(() => {
             window.location.replace("https://www.amazon.com/gp/css/order-history?ref_=nav_orders_first&sipo=true&newTab=true" + (returnUrl ? "&returnUrl=" + encodeURIComponent(returnUrl) : ""));
-        }, 500);
+        }, 300);
         return;
     }
 
@@ -54,6 +54,18 @@
                 GM_setValue("amazon_order_total", total);
                 console.log("💾 Sipariş bilgileri kaydedildi.");
 
+                // EN SON SELLERFLASH SAYFASINA OTOMATİK DÖN
+setTimeout(() => {
+    const lastUrl = GM_getValue("last_sellerflash_url", "");
+    if (lastUrl) {
+        console.log("↩️ En son açık SellerFlash sipariş sayfasına dönülüyor:", lastUrl);
+        window.location.href = lastUrl;
+    } else {
+        console.warn("⚠️ Geri dönülecek SellerFlash adresi bulunamadı.");
+    }
+}, 2000);
+
+
                 // Bilgi kutusu ekleniyor
                 const infoBox = document.createElement('div');
                 infoBox.style = "position: fixed; top: 10px; right: 10px; background-color: #f0f8ff; border: 2px solid #ff9900; padding: 15px; border-radius: 5px; z-index: 9999; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 350px;";
@@ -77,7 +89,7 @@
 
                 document.body.appendChild(infoBox);
             }
-        }, 500);
+        }, 300);
         return;
     }
 
@@ -107,7 +119,7 @@
                         setTimeout(() => {
                             console.log(`Kupon #${index+1} seçiliyor...`);
                             checkbox.click();
-                        }, 500 + (index * 300)); // Her kupon için biraz bekle
+                        }, 300 + (index * 100)); // Her kupon için biraz bekle
                     });
                 }
 
@@ -119,7 +131,7 @@
                         setTimeout(() => {
                             console.log(`Redeem butonu #${index+1} tıklanıyor...`);
                             button.click();
-                        }, 2000 + (index * 500)); // Kuponlardan sonra çalışacak
+                        }, 300 + (index * 100)); // Kuponlardan sonra çalışacak
                     });
                 }
 
@@ -146,10 +158,10 @@
                             console.log("🛒 Add to Cart tıklanıyor...");
                             addToCartBtn.click();
                         }
-                    }, 500);
+                    }, 300);
                 }
-            }, 3000); // Kupon işlemleri için yeterli süre bekle
-        }, 1500); // Sayfa yüklenmesi için biraz bekle
+            }, 500); // Kupon işlemleri için yeterli süre bekle
+        }, 600); // Sayfa yüklenmesi için biraz bekle
 
         return;
     }
@@ -261,6 +273,7 @@
     // 3. SELLERFLASH SAYFASI: Affiliate Satın Al Butonu ve Otomatik Veri Girişi
     // ─────────────────────────────────────────────
     if (url.includes("panel.sellerflash.com/sellerOrder/")) {
+        GM_setValue("last_sellerflash_url", window.location.href);
         console.log("🔹 Sellerflash sipariş sayfası algılandı:", window.location.href);
         const orderUrlParts = url.split('/');
         const sellerflashOrderId = orderUrlParts[orderUrlParts.length - 1];
@@ -306,6 +319,18 @@
                 }
             }
 
+            // SellerFlash'a dönünce otomatik olarak 'Sipariş Bilgilerini Otomatik Doldur' butonuna bas
+              window.addEventListener('load', () => {
+               const autoClickInterval = setInterval(() => {
+               const autoFillButton = document.getElementById("auto-fill-button");
+                  if (autoFillButton) {
+                    console.log("🟢 Otomatik doldurma butonuna tıklanıyor...");
+                    autoFillButton.click();
+                     clearInterval(autoClickInterval);
+                   }
+                   }, 500);
+                  });
+
             // Kaydedilmiş veri varsa ve otomatik doldurma butonu yoksa, ekle
             if (savedOrderId && savedOrderTotal && !document.getElementById('auto-fill-button')) {
                 const card = document.querySelector('.card.p-mb-3');
@@ -340,13 +365,30 @@
                                     emailField.dispatchEvent(new Event('input', { bubbles: true }));
                                 }
 
-                                // Fiyat alanını doldur
-                                const priceField = document.querySelector("body > div.p-dialog-mask.p-component-overlay.p-component-overlay-enter > div > div.p-dialog-content > div.card.p-fluid.p-grid > div:nth-child(4) input");
-                                if (priceField) {
-                                    console.log("📝 Fiyat alanı dolduruluyor:", savedOrderTotal);
-                                    priceField.value = savedOrderTotal;
-                                    priceField.dispatchEvent(new Event('input', { bubbles: true }));
-                                }
+                                function typeTextSlowly(element, text, callback) {
+                                         let i = 0;
+                                         function typeChar() {
+                                         if (i < text.length) {
+                                         element.value += text[i];
+                                         element.dispatchEvent(new Event('input', { bubbles: true }));
+                                         i++;
+                                         setTimeout(typeChar, 150);
+                                   } else {
+                                         if (callback) callback();
+                                           }
+                                         }
+                                   typeChar();
+                                   }
+
+                                // Fiyat alanı (yavaş yavaş yazılacak, nokta yerine virgül ile)
+                                  const priceField = document.querySelector("body > div.p-dialog-mask.p-component-overlay.p-component-overlay-enter > div > div.p-dialog-content > div.card.p-fluid.p-grid > div:nth-child(4) input");
+                                   if (priceField) {
+                                   const formattedPrice = savedOrderTotal.replace(".", ",");
+                                    console.log("📝 Fiyat alanı yavaşça yazılıyor:", formattedPrice);
+                                    priceField.value = ""; // Önce temizle
+                                    typeTextSlowly(priceField, formattedPrice);
+                                  }
+
 
                                 // Kaydet butonunu bul ve tıklamak için beklet
                                 setTimeout(() => {
