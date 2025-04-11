@@ -319,18 +319,6 @@ setTimeout(() => {
                 }
             }
 
-            // SellerFlash'a dönünce otomatik olarak 'Sipariş Bilgilerini Otomatik Doldur' butonuna bas
-              window.addEventListener('load', () => {
-               const autoClickInterval = setInterval(() => {
-               const autoFillButton = document.getElementById("auto-fill-button");
-                  if (autoFillButton) {
-                    console.log("🟢 Otomatik doldurma butonuna tıklanıyor...");
-                    autoFillButton.click();
-                     clearInterval(autoClickInterval);
-                   }
-                   }, 500);
-                  });
-
             // Kaydedilmiş veri varsa ve otomatik doldurma butonu yoksa, ekle
             if (savedOrderId && savedOrderTotal && !document.getElementById('auto-fill-button')) {
                 const card = document.querySelector('.card.p-mb-3');
@@ -365,30 +353,13 @@ setTimeout(() => {
                                     emailField.dispatchEvent(new Event('input', { bubbles: true }));
                                 }
 
-                                function typeTextSlowly(element, text, callback) {
-                                         let i = 0;
-                                         function typeChar() {
-                                         if (i < text.length) {
-                                         element.value += text[i];
-                                         element.dispatchEvent(new Event('input', { bubbles: true }));
-                                         i++;
-                                         setTimeout(typeChar, 150);
-                                   } else {
-                                         if (callback) callback();
-                                           }
-                                         }
-                                   typeChar();
-                                   }
-
-                                // Fiyat alanı (yavaş yavaş yazılacak, nokta yerine virgül ile)
-                                  const priceField = document.querySelector("body > div.p-dialog-mask.p-component-overlay.p-component-overlay-enter > div > div.p-dialog-content > div.card.p-fluid.p-grid > div:nth-child(4) input");
-                                   if (priceField) {
-                                   const formattedPrice = savedOrderTotal.replace(".", ",");
-                                    console.log("📝 Fiyat alanı yavaşça yazılıyor:", formattedPrice);
-                                    priceField.value = ""; // Önce temizle
-                                    typeTextSlowly(priceField, formattedPrice);
-                                  }
-
+                                // Fiyat alanını doldur
+                                const priceField = document.querySelector("body > div.p-dialog-mask.p-component-overlay.p-component-overlay-enter > div > div.p-dialog-content > div.card.p-fluid.p-grid > div:nth-child(4) input");
+                                if (priceField) {
+                                    console.log("📝 Fiyat alanı dolduruluyor:", savedOrderTotal);
+                                    priceField.value = savedOrderTotal;
+                                    priceField.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
 
                                 // Kaydet butonunu bul ve tıklamak için beklet
                                 setTimeout(() => {
